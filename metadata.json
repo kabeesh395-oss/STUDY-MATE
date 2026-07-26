@@ -1,0 +1,6 @@
+{
+  "name": "StudyMate AI",
+  "description": "Premium AI Study Assistant for engineering students with smart summaries, exam mode, quizzes, flashcards, and personalized AI tutor.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
