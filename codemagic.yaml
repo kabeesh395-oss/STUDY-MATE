@@ -1,1 +1,3 @@
-hi
+git add codemagic.yaml
+git commit -m "Update Codemagic configuration"
+git push origin main
