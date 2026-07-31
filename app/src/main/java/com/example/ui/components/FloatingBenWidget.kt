@@ -56,7 +56,7 @@ fun FloatingBenWidget(
     }
 
     Box(
-        modifier = modifier.padding(bottom = 85.dp, end = 16.dp),
+        modifier = modifier.padding(bottom = 16.dp, end = 16.dp),
         contentAlignment = Alignment.BottomEnd
     ) {
         Column(horizontalAlignment = Alignment.End) {
@@ -67,15 +67,15 @@ fun FloatingBenWidget(
             ) {
                 BenSpeechBubble(
                     text = BEN_VOICE_QUOTES[quoteIndex],
-                    modifier = Modifier.padding(bottom = 6.dp)
+                    modifier = Modifier.padding(bottom = 4.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
             BenAvatar(
                 mood = currentMood,
-                size = 72.dp,
+                size = 64.dp,
                 onClick = onOpenBenTutor
             )
         }

@@ -33,6 +33,7 @@ import com.example.ui.screens.FlashcardsScreen
 import com.example.ui.screens.GamificationScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ProfileScreen
+import com.example.ui.screens.QuestionPaperBankScreen
 import com.example.ui.screens.QuizScreen
 import com.example.ui.screens.RevisionPlannerScreen
 import com.example.ui.screens.SettingsScreen
@@ -49,6 +50,13 @@ import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.SignUpScreen
 import com.example.ui.viewmodel.AuthViewModel
 
+import com.example.utils.StudyNotificationManager
+import android.os.Build
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+
 class MainActivity : ComponentActivity() {
 
     private val viewModel: StudyViewModel by viewModels()
@@ -57,6 +65,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Initialize StudyMate AI Notification Channels and Manager
+        val notificationManager = StudyNotificationManager.getInstance(this)
+
+        // Request notification permissions for Android 13+ (API 33+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101)
+            }
+        }
 
         setContent {
             StudyMateTheme {
@@ -68,7 +86,7 @@ class MainActivity : ComponentActivity() {
                         .background(BgDark),
                     bottomBar = {
                         // Show bottom nav on main navigation screens
-                        if (currentScreen in listOf("HOME", "CAREER_HUB", "AI_CHAT", "EXAM_MODE", "QUIZ", "FLASHCARDS", "PROFILE")) {
+                        if (currentScreen in listOf("HOME", "QUESTION_BANK", "CAREER_HUB", "AI_CHAT", "EXAM_MODE", "QUIZ", "FLASHCARDS", "PROFILE")) {
                             BottomNavBar(
                                 currentScreen = currentScreen,
                                 onNavigate = { viewModel.navigateTo(it) }
@@ -99,6 +117,7 @@ class MainActivity : ComponentActivity() {
                             when (screen) {
                                 "SPLASH" -> SplashScreen(onSplashComplete = { viewModel.navigateTo("HOME") })
                                 "HOME" -> HomeScreen(viewModel = viewModel)
+                                "QUESTION_BANK" -> QuestionPaperBankScreen(viewModel = viewModel)
                                 "CAREER_HUB" -> CareerHubScreen(viewModel = viewModel)
                                 "SUBJECT_DETAIL" -> SubjectDetailScreen(viewModel = viewModel)
                                 "UPLOAD" -> UploadNotesScreen(viewModel = viewModel)
@@ -112,6 +131,7 @@ class MainActivity : ComponentActivity() {
                                 "SEARCH" -> SmartSearchScreen(viewModel = viewModel)
                                 "PROFILE" -> ProfileScreen(viewModel = viewModel, authViewModel = authViewModel)
                                 "SETTINGS" -> SettingsScreen(viewModel = viewModel)
+                                "NOTIFICATIONS" -> com.example.ui.screens.NotificationsScreen(viewModel = viewModel)
                                 "LOGIN" -> LoginScreen(authViewModel = authViewModel, studyViewModel = viewModel)
                                 "SIGNUP" -> SignUpScreen(authViewModel = authViewModel, studyViewModel = viewModel)
                                 else -> HomeScreen(viewModel = viewModel)

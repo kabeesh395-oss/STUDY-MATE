@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.example.data.local.entities.ChatMessageEntity
 import com.example.data.local.entities.FlashcardEntity
+import com.example.data.local.entities.QuestionPaperEntity
 import com.example.data.local.entities.QuizQuestionEntity
 import com.example.data.local.entities.StudyNoteEntity
 import com.example.data.local.entities.SubjectEntity
@@ -111,4 +112,26 @@ interface AppDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdateProfile(profile: UserProfileEntity)
+
+    // Question Papers
+    @Query("SELECT * FROM question_papers ORDER BY uploadDate DESC")
+    fun getAllQuestionPapers(): Flow<List<QuestionPaperEntity>>
+
+    @Query("SELECT * FROM question_papers WHERE subject = :subject ORDER BY uploadDate DESC")
+    fun getQuestionPapersForSubject(subject: String): Flow<List<QuestionPaperEntity>>
+
+    @Query("SELECT * FROM question_papers WHERE examType = :examType ORDER BY uploadDate DESC")
+    fun getQuestionPapersForExamType(examType: String): Flow<List<QuestionPaperEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertQuestionPaper(paper: QuestionPaperEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertQuestionPapers(papers: List<QuestionPaperEntity>)
+
+    @Query("DELETE FROM question_papers WHERE id = :paperId")
+    suspend fun deleteQuestionPaperById(paperId: String)
+
+    @Update
+    suspend fun updateQuestionPaper(paper: QuestionPaperEntity)
 }

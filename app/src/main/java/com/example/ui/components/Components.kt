@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -46,6 +47,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.ripple
+import androidx.compose.foundation.Image
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -67,16 +69,19 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.ui.theme.BgDark
 import com.example.ui.theme.CardBorderDark
 import com.example.ui.theme.CardDark
 import com.example.ui.theme.CyberPurple
 import com.example.ui.theme.ElectricBlue
 import com.example.ui.theme.ElectricBlueLight
+import com.example.ui.theme.SecondaryText
 import com.example.ui.theme.FlameOrange
 import com.example.ui.theme.GlassBorder
 import com.example.ui.theme.MutedText
@@ -87,9 +92,9 @@ import com.example.ui.theme.SurfaceDark
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
-    cornerRadius: Dp = 28.dp,
+    cornerRadius: Dp = 20.dp,
     borderColor: Color = GlassBorder,
-    backgroundColor: Color = SurfaceDark,
+    backgroundColor: Color = CardDark,
     onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
@@ -294,12 +299,116 @@ fun TypingIndicator(modifier: Modifier = Modifier) {
 
     Row(
         modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(modifier = Modifier.size(8.dp).scale(dot1Scale).clip(CircleShape).background(ElectricBlue))
-        Box(modifier = Modifier.size(8.dp).scale(dot2Scale).clip(CircleShape).background(CyberPurple))
-        Box(modifier = Modifier.size(8.dp).scale(dot3Scale).clip(CircleShape).background(ElectricBlueLight))
+        BrandedLoadingIndicator(size = 22.dp, strokeWidth = 2.dp, logoSize = 12.dp)
+        Text(
+            text = "Ben is thinking...",
+            style = MaterialTheme.typography.labelSmall,
+            color = SecondaryText,
+            fontSize = 11.sp
+        )
+    }
+}
+
+@Composable
+fun BrandedLoadingIndicator(
+    modifier: Modifier = Modifier,
+    size: Dp = 48.dp,
+    strokeWidth: Dp = 2.5.dp,
+    logoSize: Dp = (size.value * 0.52f).dp
+) {
+    val transition = rememberInfiniteTransition(label = "brandedLoadingRotation")
+    val rotationAngle by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ringRotation"
+    )
+
+    Box(
+        modifier = modifier.size(size),
+        contentAlignment = Alignment.Center
+    ) {
+        // Subtle electric-blue glow beneath the logo (10-15% opacity)
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(
+                        ElectricBlue.copy(alpha = 0.18f),
+                        Color.Transparent
+                    ),
+                    center = center,
+                    radius = size.toPx() * 0.55f
+                )
+            )
+        }
+
+        // Thin electric-blue circular ring that rotates smoothly clockwise
+        Canvas(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { rotationZ = rotationAngle }
+        ) {
+            drawArc(
+                brush = Brush.sweepGradient(
+                    colors = listOf(
+                        ElectricBlue.copy(alpha = 0.05f),
+                        ElectricBlue,
+                        ElectricBlue.copy(alpha = 0.05f)
+                    )
+                ),
+                startAngle = 0f,
+                sweepAngle = 270f,
+                useCenter = false,
+                style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
+            )
+        }
+
+        // Bold white lightning-shaped "S" logo (completely still)
+        Image(
+            painter = painterResource(id = R.drawable.ic_lightning_s_logo),
+            contentDescription = "Loading",
+            modifier = Modifier.size(logoSize)
+        )
+    }
+}
+
+@Composable
+fun BrandedLoadingScreen(
+    modifier: Modifier = Modifier,
+    message: String? = null
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            BrandedLoadingIndicator(
+                size = 80.dp,
+                strokeWidth = 3.dp,
+                logoSize = 42.dp
+            )
+            if (!message.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = SecondaryText,
+                    fontSize = 13.sp
+                )
+            }
+        }
     }
 }
 
@@ -350,75 +459,87 @@ fun BottomNavBar(
 ) {
     val items = listOf(
         NavItem("HOME", "Home", Icons.Default.Home),
-        NavItem("CAREER_HUB", "Career", Icons.Default.Work),
+        NavItem("QUESTION_BANK", "Library", Icons.Default.Folder),
         NavItem("AI_CHAT", "AI Tutor", Icons.Default.Chat),
-        NavItem("EXAM_MODE", "Exam Mode", Icons.Default.AutoAwesome),
-        NavItem("QUIZ", "Quiz", Icons.Default.Quiz),
+        NavItem("EXAM_MODE", "Tests", Icons.Default.AutoAwesome),
+        NavItem("CAREER_HUB", "Career", Icons.Default.Work),
         NavItem("PROFILE", "Profile", Icons.Default.Person)
     )
 
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .border(1.dp, GlassBorder, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+            .border(1.dp, GlassBorder, RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
             .navigationBarsPadding(),
-        color = BgDark.copy(alpha = 0.95f),
-        tonalElevation = 8.dp
+        color = BgDark.copy(alpha = 0.88f),
+        tonalElevation = 6.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 10.dp, horizontal = 8.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
+                .padding(vertical = 8.dp, horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             items.forEach { item ->
                 val isSelected = currentScreen == item.route
 
                 val iconScale by animateFloatAsState(
-                    targetValue = if (isSelected) 1.2f else 1.0f,
+                    targetValue = if (isSelected) 1.15f else 1.0f,
                     animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
                     label = "navIconScale"
                 )
 
                 val iconColor by animateColorAsState(
-                    targetValue = if (isSelected) ElectricBlue else MutedText,
+                    targetValue = if (isSelected) ElectricBlue else SecondaryText,
                     animationSpec = tween(200),
                     label = "navIconColor"
                 )
 
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
+                Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
+                        .weight(1f)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (isSelected) ElectricBlue.copy(alpha = 0.12f) else Color.Transparent)
                         .clickable { onNavigate(item.route) }
-                        .padding(horizontal = 6.dp, vertical = 4.dp)
+                        .padding(vertical = 6.dp)
                         .testTag("nav_item_${item.route.lowercase()}")
                 ) {
-                    Box(
-                        modifier = Modifier.size(24.dp),
-                        contentAlignment = Alignment.Center
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Icon(
-                            imageVector = item.icon,
-                            contentDescription = item.label,
-                            tint = iconColor,
-                            modifier = Modifier
-                                .size(22.dp)
-                                .scale(iconScale)
+                        Box(
+                            modifier = Modifier.size(24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = item.icon,
+                                contentDescription = item.label,
+                                tint = iconColor,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .scale(iconScale)
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = item.label,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontSize = 10.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) ElectricBlue else SecondaryText,
+                            maxLines = 1
                         )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    if (isSelected) {
+                        Spacer(modifier = Modifier.height(3.dp))
                         Box(
                             modifier = Modifier
-                                .size(5.dp)
-                                .clip(CircleShape)
-                                .background(ElectricBlue)
+                                .width(if (isSelected) 14.dp else 0.dp)
+                                .height(2.dp)
+                                .clip(RoundedCornerShape(1.dp))
+                                .background(if (isSelected) ElectricBlue else Color.Transparent)
                         )
-                    } else {
-                        Spacer(modifier = Modifier.height(5.dp))
                     }
                 }
             }

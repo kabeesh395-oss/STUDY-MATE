@@ -108,23 +108,21 @@ fun QuizScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(
-                                onClick = { viewModel.navigateTo("HOME") },
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .background(CardDark)
-                            ) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = PrimaryText)
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = "Interactive Quiz Engine",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = PrimaryText
-                            )
+                        IconButton(
+                            onClick = { viewModel.navigateTo("HOME") },
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(CardDark)
+                        ) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = PrimaryText)
                         }
+
+                        Text(
+                            text = "Interactive Quiz Engine",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryText
+                        )
 
                         // Difficulty Pill
                         Box(

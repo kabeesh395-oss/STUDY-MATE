@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
+import com.example.ui.components.BrandedLoadingIndicator
 import com.example.ui.theme.BgDark
 import com.example.ui.theme.ElectricBlue
 import com.example.ui.theme.NeonCyan
@@ -85,44 +86,14 @@ fun SplashScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(24.dp)
         ) {
-            // Logo Container with glowing border
-            Box(
-                modifier = Modifier
-                    .scale(auraScale)
-                    .size(140.dp)
-                    .clip(RoundedCornerShape(32.dp))
-                    .border(
-                        width = 2.dp,
-                        brush = Brush.sweepGradient(
-                            listOf(
-                                ElectricBlue,
-                                NeonCyan,
-                                Color.White,
-                                ElectricBlue
-                            )
-                        ),
-                        shape = RoundedCornerShape(32.dp)
-                    )
-                    .background(
-                        Brush.radialGradient(
-                            listOf(
-                                ElectricBlue.copy(alpha = auraAlpha),
-                                Color.Black
-                            )
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.app_icon_logo_1785050242649),
-                    contentDescription = "StudyMate AI Logo",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(RoundedCornerShape(26.dp))
-                )
-            }
+            // Branded Loading Indicator with rotating Electric Blue ring around static S logo
+            BrandedLoadingIndicator(
+                size = 130.dp,
+                strokeWidth = 3.dp,
+                logoSize = 68.dp
+            )
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             // App Title
             Text(
@@ -146,18 +117,6 @@ fun SplashScreen(
                 letterSpacing = 3.sp,
                 fontSize = 11.sp,
                 textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(48.dp))
-
-            // Sleek Loading bar
-            LinearProgressIndicator(
-                modifier = Modifier
-                    .width(160.dp)
-                    .height(4.dp)
-                    .clip(CircleShape),
-                color = ElectricBlue,
-                trackColor = Color(0xFF18181C)
             )
         }
     }

@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ColorLens
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,13 +50,20 @@ import com.example.ui.theme.ElectricBlue
 import com.example.ui.theme.GlassBorder
 import com.example.ui.theme.PrimaryText
 import com.example.ui.theme.SecondaryText
+import com.example.ui.theme.SurfaceDark
 import com.example.ui.viewmodel.StudyViewModel
+
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.ui.platform.LocalContext
+import com.example.utils.StudyNotificationManager
 
 @Composable
 fun SettingsScreen(
     viewModel: StudyViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val notificationManager = remember { StudyNotificationManager.getInstance(context) }
     val profile = viewModel.userProfile.collectAsState().value
 
     var selectedAccent by remember(profile) { mutableStateOf(profile?.accentColorHex ?: "#3B82F6") }
@@ -77,7 +85,8 @@ fun SettingsScreen(
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     IconButton(
                         onClick = { viewModel.navigateTo("HOME") },
@@ -88,20 +97,76 @@ fun SettingsScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = PrimaryText)
                     }
 
-                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Settings",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryText
+                    )
 
-                    Column {
+                    Spacer(modifier = Modifier.size(48.dp))
+                }
+            }
+
+            // Profile Card (Reference Design)
+            item {
+                GlassCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.navigateTo("PROFILE") },
+                    cornerRadius = 16.dp,
+                    backgroundColor = CardDark,
+                    borderColor = GlassBorder
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(SurfaceDark)
+                                    .border(1.dp, GlassBorder, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                androidx.compose.material3.Icon(
+                                    imageVector = androidx.compose.material.icons.Icons.Default.Person,
+                                    contentDescription = "User",
+                                    tint = PrimaryText,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(14.dp))
+
+                            Column {
+                                Text(
+                                    text = profile?.name?.ifBlank { "Kabeesh N" } ?: "Kabeesh N",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PrimaryText,
+                                    fontSize = 15.sp
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "kabeeshn@gmail.com",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = SecondaryText,
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+
                         Text(
-                            text = "Preferences & Settings",
-                            style = MaterialTheme.typography.titleLarge,
+                            text = ">",
+                            style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = PrimaryText
-                        )
-                        Text(
-                            text = "App Theme, Language & AI Configuration",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = SecondaryText,
-                            fontSize = 12.sp
+                            color = SecondaryText
                         )
                     }
                 }
@@ -244,6 +309,116 @@ fun SettingsScreen(
                 }
             }
 
+            // StudyMate AI Notification Branding & Test Suite Card
+            item {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    backgroundColor = CardDark,
+                    borderColor = GlassBorder
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Notifications, contentDescription = null, tint = ElectricBlue)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("StudyMate AI Branding & Notifications", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryText)
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = "Status bar notifications use the official StudyMate monochrome 'S' lightning logo and Electric Blue theme.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = SecondaryText,
+                            fontSize = 11.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        // Test Notification Buttons
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(ElectricBlue.copy(alpha = 0.15f))
+                                        .border(1.dp, ElectricBlue, RoundedCornerShape(10.dp))
+                                        .clickable { notificationManager.sendAiNotification() }
+                                        .padding(vertical = 10.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("🤖 AI Insight", color = PrimaryText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(ElectricBlue.copy(alpha = 0.15f))
+                                        .border(1.dp, ElectricBlue, RoundedCornerShape(10.dp))
+                                        .clickable { notificationManager.sendStreakReminderNotification(14) }
+                                        .padding(vertical = 10.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("🔥 Streak Alert", color = PrimaryText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(ElectricBlue.copy(alpha = 0.15f))
+                                        .border(1.dp, ElectricBlue, RoundedCornerShape(10.dp))
+                                        .clickable { notificationManager.sendExamReminderNotification("Computer Networks", "IA-2 Test", "Tomorrow 9 AM") }
+                                        .padding(vertical = 10.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("📝 Exam Alert", color = PrimaryText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(ElectricBlue.copy(alpha = 0.15f))
+                                        .border(1.dp, ElectricBlue, RoundedCornerShape(10.dp))
+                                        .clickable { notificationManager.sendAchievementNotification() }
+                                        .padding(vertical = 10.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text("🏆 Level Up XP", color = PrimaryText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(ElectricBlue)
+                                    .clickable { notificationManager.triggerAllBrandedNotifications() }
+                                    .padding(vertical = 12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "Send Full StudyMate AI Notification Suite",
+                                    color = Color.Black,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
             // About StudyMate AI Branding Card
             item {
                 GlassCard(
@@ -261,13 +436,14 @@ fun SettingsScreen(
                             modifier = Modifier
                                 .size(56.dp)
                                 .clip(RoundedCornerShape(16.dp))
-                                .border(1.dp, ElectricBlue, RoundedCornerShape(16.dp)),
+                                .background(BgDark)
+                                .border(1.dp, GlassBorder, RoundedCornerShape(16.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Image(
-                                painter = painterResource(id = R.drawable.app_icon_logo_1785050242649),
+                                painter = painterResource(id = R.drawable.ic_lightning_s_logo),
                                 contentDescription = "StudyMate AI Logo",
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier.size(36.dp)
                             )
                         }
 

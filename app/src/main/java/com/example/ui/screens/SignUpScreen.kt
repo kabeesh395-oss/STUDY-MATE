@@ -31,7 +31,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import com.example.ui.components.BrandedLoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -161,13 +161,14 @@ fun SignUpScreen(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(RoundedCornerShape(20.dp))
-                    .border(1.5.dp, ElectricBlue, RoundedCornerShape(20.dp)),
+                    .background(BgDark)
+                    .border(1.5.dp, GlassBorder, RoundedCornerShape(20.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.app_icon_logo_1785050242649),
+                    painter = painterResource(id = R.drawable.ic_lightning_s_logo),
                     contentDescription = "StudyMate AI Logo",
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.size(52.dp)
                 )
             }
 
@@ -357,10 +358,10 @@ fun SignUpScreen(
                             .testTag("create_account_btn")
                     ) {
                         if (isLoading) {
-                            CircularProgressIndicator(
-                                color = PrimaryText,
-                                modifier = Modifier.size(22.dp),
-                                strokeWidth = 2.5.dp
+                            BrandedLoadingIndicator(
+                                size = 24.dp,
+                                strokeWidth = 2.dp,
+                                logoSize = 13.dp
                             )
                         } else {
                             Text("Create Account", color = PrimaryText, fontWeight = FontWeight.Bold, fontSize = 15.sp)

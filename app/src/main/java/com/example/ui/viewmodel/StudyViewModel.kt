@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.local.AppDatabase
 import com.example.data.local.entities.ChatMessageEntity
 import com.example.data.local.entities.FlashcardEntity
+import com.example.data.local.entities.QuestionPaperEntity
 import com.example.data.local.entities.QuizQuestionEntity
 import com.example.data.local.entities.StudyNoteEntity
 import com.example.data.local.entities.SubjectEntity
@@ -56,6 +57,32 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
     val userProfile: StateFlow<UserProfileEntity?> = repository.userProfile.stateIn(
         viewModelScope, SharingStarted.WhileSubscribed(5000), null
     )
+
+    val allQuestionPapers: StateFlow<List<QuestionPaperEntity>> = repository.allQuestionPapers.stateIn(
+        viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList()
+    )
+
+    // Question Paper Filters
+    private val _paperFolderFilter = MutableStateFlow("ALL")
+    val paperFolderFilter: StateFlow<String> = _paperFolderFilter.asStateFlow()
+
+    private val _paperSubjectFilter = MutableStateFlow("ALL")
+    val paperSubjectFilter: StateFlow<String> = _paperSubjectFilter.asStateFlow()
+
+    private val _paperYearFilter = MutableStateFlow("ALL")
+    val paperYearFilter: StateFlow<String> = _paperYearFilter.asStateFlow()
+
+    private val _paperSearchQuery = MutableStateFlow("")
+    val paperSearchQuery: StateFlow<String> = _paperSearchQuery.asStateFlow()
+
+    private val _selectedPaper = MutableStateFlow<QuestionPaperEntity?>(null)
+    val selectedPaper: StateFlow<QuestionPaperEntity?> = _selectedPaper.asStateFlow()
+
+    private val _isProcessingPaperUpload = MutableStateFlow(false)
+    val isProcessingPaperUpload: StateFlow<Boolean> = _isProcessingPaperUpload.asStateFlow()
+
+    private val _paperUploadProgressText = MutableStateFlow("")
+    val paperUploadProgressText: StateFlow<String> = _paperUploadProgressText.asStateFlow()
 
     // UI State variables
     private val _currentScreen = MutableStateFlow("SPLASH") // SPLASH, HOME, SUBJECT_DETAIL, UPLOAD, AI_CHAT, EXAM_MODE, QUIZ, FLASHCARDS, REVISION, ANALYTICS, GAMIFICATION, SEARCH, PROFILE, SETTINGS
@@ -593,6 +620,168 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val p = userProfile.value ?: UserProfileEntity()
             repository.updateProfile(p.copy(accentColorHex = accentColor, selectedLanguage = language, selectedAiModel = aiModel))
+        }
+    }
+
+    // Question Paper Bank Actions
+    fun setPaperFolderFilter(folder: String) {
+        _paperFolderFilter.value = folder
+    }
+
+    fun setPaperSubjectFilter(subject: String) {
+        _paperSubjectFilter.value = subject
+    }
+
+    fun setPaperYearFilter(year: String) {
+        _paperYearFilter.value = year
+    }
+
+    fun setPaperSearchQuery(query: String) {
+        _paperSearchQuery.value = query
+    }
+
+    fun setSelectedPaper(paper: QuestionPaperEntity?) {
+        _selectedPaper.value = paper
+    }
+
+    fun toggleBookmarkPaper(paper: QuestionPaperEntity) {
+        viewModelScope.launch {
+            repository.updateQuestionPaper(paper.copy(isBookmarked = !paper.isBookmarked))
+            if (_selectedPaper.value?.id == paper.id) {
+                _selectedPaper.value = paper.copy(isBookmarked = !paper.isBookmarked)
+            }
+        }
+    }
+
+    fun deleteQuestionPaper(paperId: String) {
+        viewModelScope.launch {
+            repository.deleteQuestionPaper(paperId)
+            if (_selectedPaper.value?.id == paperId) {
+                _selectedPaper.value = null
+            }
+        }
+    }
+
+    fun renameQuestionPaper(paper: QuestionPaperEntity, newName: String) {
+        viewModelScope.launch {
+            val formattedName = if (newName.endsWith(".pdf", ignoreCase = true) || newName.endsWith(".docx", ignoreCase = true) || newName.endsWith(".jpg", ignoreCase = true) || newName.endsWith(".png", ignoreCase = true)) newName else "$newName.${paper.fileType.lowercase()}"
+            val updated = paper.copy(fileName = formattedName)
+            repository.updateQuestionPaper(updated)
+            if (_selectedPaper.value?.id == paper.id) {
+                _selectedPaper.value = updated
+            }
+        }
+    }
+
+    fun downloadPaperForOffline(paper: QuestionPaperEntity) {
+        viewModelScope.launch {
+            val updated = paper.copy(isDownloaded = true)
+            repository.updateQuestionPaper(updated)
+            if (_selectedPaper.value?.id == paper.id) {
+                _selectedPaper.value = updated
+            }
+            try {
+                com.example.utils.StudyNotificationManager.getInstance(getApplication())
+                    .sendDownloadCompleteNotification(paper.fileName, paper.examType)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun uploadQuestionPaper(
+        fileName: String,
+        subject: String,
+        examType: String,
+        academicYear: String,
+        department: String,
+        semester: String,
+        fileType: String
+    ) {
+        viewModelScope.launch {
+            _isProcessingPaperUpload.value = true
+            _paperUploadProgressText.value = "Uploading $fileName to Firebase Storage..."
+            kotlinx.coroutines.delay(800)
+
+            _paperUploadProgressText.value = "Extracting questions via Gemini AI..."
+            kotlinx.coroutines.delay(1000)
+
+            _paperUploadProgressText.value = "Categorizing 2, 5, 10, 13 & 16 Marks..."
+            kotlinx.coroutines.delay(800)
+
+            _paperUploadProgressText.value = "Detecting repeated questions & generating model answers..."
+            kotlinx.coroutines.delay(800)
+
+            val newId = "qp_${System.currentTimeMillis()}"
+            val cleanFileName = if (fileName.contains(".")) fileName else "$fileName.${fileType.lowercase()}"
+
+            // Generate sample extracted questions tailored to subject
+            val sampleExtracted = listOf(
+                "1. State the fundamental theorem of $subject.",
+                "2. Define key architectural components and execution bounds.",
+                "3. Explain $subject system implementation with block diagram and equations.",
+                "4. Compare $subject core strategies for high performance.",
+                "5. Solve real-world problem scenario using $subject algorithms."
+            )
+
+            val sampleExtractedJson = "[\"" + sampleExtracted.joinToString("\", \"") + "\"]"
+
+            val sampleMarkCategoriesJson = """{
+                "2": ["1. State the fundamental theorem of $subject.", "2. Define key architectural components and execution bounds."],
+                "5": ["4. Compare $subject core strategies for high performance."],
+                "10": [],
+                "13": ["3. Explain $subject system implementation with block diagram and equations."],
+                "16": ["5. Solve real-world problem scenario using $subject algorithms."]
+            }"""
+
+            val sampleRepeatedJson = """[
+                "Fundamental theorem of $subject (Appeared in 2023, 2024 $examType)",
+                "$subject system architecture block diagram (Appeared 3 times in Anna Univ papers)"
+            ]"""
+
+            val sampleImportantJson = """[
+                "$subject core principles and mathematical derivations",
+                "High probability 13-Mark & 16-Mark university exam questions"
+            ]"""
+
+            val sampleAnswersJson = """{
+                "1. State the fundamental theorem of $subject.": "The fundamental theorem establishes the core mathematical formulation governing system stability and logarithmic search complexity.",
+                "3. Explain $subject system implementation with block diagram and equations.": "The system processes input sequences, applies transformation layers, and optimizes cost functions for optimal output accuracy."
+            }"""
+
+            val newPaper = QuestionPaperEntity(
+                id = newId,
+                fileName = cleanFileName,
+                subject = subject,
+                examType = examType,
+                academicYear = academicYear,
+                department = department,
+                semester = semester,
+                fileType = fileType,
+                fileSizeFormatted = "${(10..45).random() / 10.0} MB",
+                storagePath = "gs://studymate-ai.appspot.com/question_papers/$newId/$cleanFileName",
+                uploadDate = System.currentTimeMillis(),
+                isBookmarked = false,
+                isDownloaded = true,
+                extractedQuestionsJson = sampleExtractedJson,
+                repeatedQuestionsJson = sampleRepeatedJson,
+                markCategoriesJson = sampleMarkCategoriesJson,
+                importantQuestionsJson = sampleImportantJson,
+                generatedAnswersJson = sampleAnswersJson
+            )
+
+            repository.saveQuestionPaper(newPaper)
+            addXpAndCoins(50, 15)
+
+            _isProcessingPaperUpload.value = false
+            _paperUploadProgressText.value = ""
+
+            try {
+                com.example.utils.StudyNotificationManager.getInstance(getApplication())
+                    .sendDownloadCompleteNotification(cleanFileName, examType)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }

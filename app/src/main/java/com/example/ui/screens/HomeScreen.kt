@@ -31,6 +31,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BarChart
@@ -40,14 +41,19 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Functions
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Terminal
 import androidx.compose.material.icons.filled.Work
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -101,6 +107,7 @@ import com.example.ui.theme.MutedText
 import com.example.ui.theme.PrimaryText
 import com.example.ui.theme.SecondaryText
 import com.example.ui.theme.StatusSuccess
+import com.example.ui.theme.StatusWarning
 import com.example.ui.theme.SurfaceDark
 import com.example.ui.viewmodel.StudyViewModel
 
@@ -147,65 +154,111 @@ fun HomeScreen(
                     else -> "Good Night" to "🌙"
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .border(1.dp, ElectricBlue, RoundedCornerShape(14.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Image(
-                                painter = painterResource(id = R.drawable.app_icon_logo_1785050242649),
-                                contentDescription = "StudyMate AI",
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "$timeGreeting $timeIcon",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = SecondaryText,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-                            Text(
-                                text = "Kabeesh",
-                                style = MaterialTheme.typography.displayMedium,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 24.sp,
-                                color = PrimaryText
-                            )
-                        }
-                    }
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    // Minimal Top App Bar with Centered Logo
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         IconButton(
-                            onClick = { viewModel.navigateTo("SEARCH") },
+                            onClick = { viewModel.navigateTo("SETTINGS") },
                             modifier = Modifier
                                 .clip(CircleShape)
                                 .background(SurfaceDark)
                                 .border(1.dp, GlassBorder, CircleShape)
-                                .testTag("home_search_btn")
                         ) {
-                            Icon(Icons.Default.Search, contentDescription = "Search", tint = ElectricBlue)
+                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = PrimaryText)
                         }
 
-                        Spacer(modifier = Modifier.width(10.dp))
-
-                        // Avatar with Gradient Ring
+                        // Centered Lightning "S" Logo
                         Box(
                             modifier = Modifier
-                                .size(48.dp)
-                                .clip(RoundedCornerShape(16.dp))
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(BgDark)
+                                .border(1.dp, GlassBorder, RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.ic_lightning_s_logo),
+                                contentDescription = "StudyMate AI",
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(
+                                onClick = { viewModel.navigateTo("SEARCH") },
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(SurfaceDark)
+                                    .border(1.dp, GlassBorder, CircleShape)
+                                    .testTag("home_search_btn")
+                            ) {
+                                Icon(Icons.Default.Search, contentDescription = "Search", tint = PrimaryText)
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            // Notification Bell with Unread Badge
+                            Box {
+                                IconButton(
+                                    onClick = { viewModel.navigateTo("NOTIFICATIONS") },
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .background(SurfaceDark)
+                                        .border(1.dp, GlassBorder, CircleShape)
+                                        .testTag("home_notifications_btn")
+                                ) {
+                                    Icon(
+                                        imageVector = androidx.compose.material.icons.Icons.Default.Notifications,
+                                        contentDescription = "Notifications",
+                                        tint = PrimaryText
+                                    )
+                                }
+                                // Unread Badge
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(ElectricBlue)
+                                        .align(Alignment.TopEnd)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // User Welcome Header
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(
+                                text = "Hi, Kabeesh 👋",
+                                style = MaterialTheme.typography.displayMedium,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 22.sp,
+                                color = PrimaryText
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Let's continue your learning journey",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = SecondaryText,
+                                fontSize = 13.sp
+                            )
+                        }
+
+                        // Avatar with Blue Gradient Border
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(12.dp))
                                 .background(Brush.linearGradient(listOf(ElectricBlue, ElectricBlueDark)))
                                 .padding(1.dp),
                             contentAlignment = Alignment.Center
@@ -213,14 +266,14 @@ fun HomeScreen(
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .clip(RoundedCornerShape(15.dp))
+                                    .clip(RoundedCornerShape(11.dp))
                                     .background(BgDark)
                                     .clickable { viewModel.navigateTo("PROFILE") },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = "K",
-                                    style = MaterialTheme.typography.titleLarge,
+                                    style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Black,
                                     color = ElectricBlue
                                 )
@@ -321,16 +374,157 @@ fun HomeScreen(
                 }
             }
 
-            // Quick Actions Row
+            // Quick Access Section
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Column {
+                    Text(
+                        text = "Quick Access",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryText,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        QuickAccessTile(
+                            label = "Notes",
+                            icon = Icons.Default.Book,
+                            containerColor = ElectricBlue,
+                            modifier = Modifier.weight(1f),
+                            onClick = { viewModel.navigateTo("SEARCH") }
+                        )
+                        QuickAccessTile(
+                            label = "Questions",
+                            icon = Icons.Default.Folder,
+                            containerColor = StatusSuccess,
+                            modifier = Modifier.weight(1f),
+                            onClick = { viewModel.navigateTo("QUESTION_BANK") }
+                        )
+                        QuickAccessTile(
+                            label = "Documents",
+                            icon = Icons.Default.Storage,
+                            containerColor = CyberPurple,
+                            modifier = Modifier.weight(1f),
+                            onClick = { viewModel.navigateTo("UPLOAD") }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        QuickAccessTile(
+                            label = "AI Tutor",
+                            icon = Icons.Default.Psychology,
+                            containerColor = StatusWarning,
+                            modifier = Modifier.weight(1f),
+                            onClick = { viewModel.navigateTo("AI_CHAT") }
+                        )
+                        QuickAccessTile(
+                            label = "Flashcards",
+                            icon = Icons.Default.AutoAwesome,
+                            containerColor = CyberPink,
+                            modifier = Modifier.weight(1f),
+                            onClick = { viewModel.navigateTo("FLASHCARDS") }
+                        )
+                        QuickAccessTile(
+                            label = "Bookmarks",
+                            icon = Icons.Default.Bookmark,
+                            containerColor = FlameOrange,
+                            modifier = Modifier.weight(1f),
+                            onClick = { viewModel.navigateTo("REVISION") }
+                        )
+                    }
+                }
+            }
+
+            // Question Paper Bank Feature Banner Card
+            item {
+                GlassCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.navigateTo("QUESTION_BANK") }
+                        .testTag("home_question_bank_banner"),
+                    cornerRadius = 24.dp,
+                    backgroundColor = CardDark,
+                    borderColor = ElectricBlue.copy(alpha = 0.6f)
                 ) {
-                    ShortcutPill("Career Hub", Icons.Default.Work) { viewModel.navigateTo("CAREER_HUB") }
-                    ShortcutPill("Analytics", Icons.Default.BarChart) { viewModel.navigateTo("ANALYTICS") }
-                    ShortcutPill("Revision", Icons.Default.Schedule) { viewModel.navigateTo("REVISION") }
-                    ShortcutPill("Rewards", Icons.Default.EmojiEvents) { viewModel.navigateTo("GAMIFICATION") }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(ElectricBlue.copy(alpha = 0.15f))
+                                    .border(1.dp, ElectricBlue, RoundedCornerShape(16.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Folder,
+                                    contentDescription = "Question Paper Bank",
+                                    tint = ElectricBlue,
+                                    modifier = Modifier.size(26.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(14.dp))
+
+                            Column {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = "Question Paper Bank",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = PrimaryText,
+                                        fontSize = 15.sp
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(ElectricBlue)
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text("AI ENHANCED", color = Color.Black, fontWeight = FontWeight.Black, fontSize = 8.sp)
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(2.dp))
+
+                                Text(
+                                    text = "IA 1, IA 2, Model & Semester papers with Gemini AI mark categorization & answers",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = SecondaryText,
+                                    fontSize = 11.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Go",
+                            tint = ElectricBlue,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .graphicsLayer { rotationZ = 180f }
+                        )
+                    }
                 }
             }
 
@@ -450,7 +644,7 @@ fun HomeScreen(
             onClick = { showCreateDialog = true },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(bottom = 165.dp, end = 20.dp)
+                .padding(bottom = 90.dp, end = 20.dp)
                 .scale(fabScale)
                 .testTag("create_subject_fab"),
             containerColor = ElectricBlue,
@@ -759,5 +953,55 @@ fun CreateSubjectDialog(
         },
         containerColor = SurfaceDark
     )
+}
+
+@Composable
+fun QuickAccessTile(
+    label: String,
+    icon: ImageVector,
+    containerColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    GlassCard(
+        modifier = modifier.height(84.dp),
+        cornerRadius = 16.dp,
+        backgroundColor = CardDark,
+        borderColor = GlassBorder,
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(containerColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = PrimaryText,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
 }
 

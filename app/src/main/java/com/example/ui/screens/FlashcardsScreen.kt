@@ -99,32 +99,28 @@ fun FlashcardsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(
-                            onClick = { viewModel.navigateTo("HOME") },
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .background(CardDark)
-                        ) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = PrimaryText)
-                        }
+                    IconButton(
+                        onClick = { viewModel.navigateTo("HOME") },
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(CardDark)
+                    ) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = PrimaryText)
+                    }
 
-                        Spacer(modifier = Modifier.width(12.dp))
-
-                        Column {
-                            Text(
-                                text = "Interactive Flashcards",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = PrimaryText
-                            )
-                            Text(
-                                text = "Spaced Repetition Engine",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = SecondaryText,
-                                fontSize = 12.sp
-                            )
-                        }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Interactive Flashcards",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryText
+                        )
+                        Text(
+                            text = "Spaced Repetition Engine",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = SecondaryText,
+                            fontSize = 12.sp
+                        )
                     }
 
                     if (currentCard != null) {
@@ -137,6 +133,8 @@ fun FlashcardsScreen(
                                 tint = if (currentCard.isBookmarked) ElectricBlue else SecondaryText
                             )
                         }
+                    } else {
+                        Spacer(modifier = Modifier.size(48.dp))
                     }
                 }
 

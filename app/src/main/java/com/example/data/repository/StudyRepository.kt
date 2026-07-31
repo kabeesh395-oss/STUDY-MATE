@@ -3,6 +3,7 @@ package com.example.data.repository
 import com.example.data.local.dao.AppDao
 import com.example.data.local.entities.ChatMessageEntity
 import com.example.data.local.entities.FlashcardEntity
+import com.example.data.local.entities.QuestionPaperEntity
 import com.example.data.local.entities.QuizQuestionEntity
 import com.example.data.local.entities.StudyNoteEntity
 import com.example.data.local.entities.SubjectEntity
@@ -25,6 +26,7 @@ class StudyRepository(val appDao: AppDao) {
     val allQuizQuestions: Flow<List<QuizQuestionEntity>> = appDao.getAllQuizQuestions()
     val allChatMessages: Flow<List<ChatMessageEntity>> = appDao.getAllChatMessages()
     val userProfile: Flow<UserProfileEntity?> = appDao.getUserProfile()
+    val allQuestionPapers: Flow<List<QuestionPaperEntity>> = appDao.getAllQuestionPapers()
 
     fun getUnitsForSubject(subjectId: String): Flow<List<UnitEntity>> = appDao.getUnitsForSubject(subjectId)
     fun getNotesForSubject(subjectId: String): Flow<List<StudyNoteEntity>> = appDao.getNotesForSubject(subjectId)
@@ -82,6 +84,18 @@ class StudyRepository(val appDao: AppDao) {
 
     suspend fun updateProfile(profile: UserProfileEntity) {
         appDao.insertOrUpdateProfile(profile)
+    }
+
+    suspend fun saveQuestionPaper(paper: QuestionPaperEntity) {
+        appDao.insertQuestionPaper(paper)
+    }
+
+    suspend fun deleteQuestionPaper(paperId: String) {
+        appDao.deleteQuestionPaperById(paperId)
+    }
+
+    suspend fun updateQuestionPaper(paper: QuestionPaperEntity) {
+        appDao.updateQuestionPaper(paper)
     }
 
     suspend fun generateAiResponse(
@@ -350,6 +364,240 @@ class StudyRepository(val appDao: AppDao) {
                 suggestedPillsJson = "[\"Summarize AI Unit 3\", \"Explain A* Search for Viva\", \"Generate 13-Mark Exam Questions\", \"Code Binary Search in Python\"]"
             )
             appDao.insertChatMessage(welcomeMessage)
+
+            val samplePapers = listOf(
+                QuestionPaperEntity(
+                    id = "qp_1",
+                    fileName = "CS8691_AI_IA1_2024.pdf",
+                    subject = "Artificial Intelligence",
+                    examType = "IA 1",
+                    academicYear = "2024-2025",
+                    department = "Computer Science & Engineering",
+                    semester = "Semester 6",
+                    fileType = "PDF",
+                    fileSizeFormatted = "1.8 MB",
+                    isBookmarked = true,
+                    isDownloaded = true,
+                    extractedQuestionsJson = """[
+                        "1. Define Admissible Heuristic and state its mathematical condition.",
+                        "2. What is problem formulation in Artificial Intelligence?",
+                        "3. Explain A* Search Algorithm with a neat diagram and path cost equation.",
+                        "4. Differentiate between Uninformed and Informed search strategies with examples.",
+                        "5. Solve the 8-Puzzle Problem using A* Search and derive the total nodes expanded."
+                    ]""",
+                    repeatedQuestionsJson = """[
+                        "Define Admissible Heuristic (Appeared in IA-1 2023, IA-1 2024, Semester 2023)",
+                        "A* Search Algorithm Execution (Appeared 4 times in Anna Univ papers)"
+                    ]""",
+                    markCategoriesJson = """{
+                        "2": ["1. Define Admissible Heuristic and state its mathematical condition.", "2. What is problem formulation in Artificial Intelligence?"],
+                        "5": ["4. Differentiate between Uninformed and Informed search strategies with examples."],
+                        "10": [],
+                        "13": ["3. Explain A* Search Algorithm with a neat diagram and path cost equation."],
+                        "16": ["5. Solve the 8-Puzzle Problem using A* Search and derive the total nodes expanded."]
+                    }""",
+                    importantQuestionsJson = """[
+                        "A* Search admissibility and proof of optimality",
+                        "Alpha-Beta Pruning game tree calculation",
+                        "Constraint Satisfaction Problem (CSP) Map Coloring"
+                    ]""",
+                    generatedAnswersJson = """{
+                        "1. Define Admissible Heuristic and state its mathematical condition.": "An admissible heuristic h(n) never overestimates the cost to reach the goal. Condition: 0 <= h(n) <= h*(n).",
+                        "3. Explain A* Search Algorithm with a neat diagram and path cost equation.": "A* search evaluates nodes using f(n) = g(n) + h(n), where g(n) is path cost from start and h(n) is heuristic estimate to goal. It guarantees optimal shortest path when h(n) is admissible and consistent."
+                    }"""
+                ),
+                QuestionPaperEntity(
+                    id = "qp_2",
+                    fileName = "CS8491_SE_IA2_2024.pdf",
+                    subject = "Software Engineering",
+                    examType = "IA 2",
+                    academicYear = "2024-2025",
+                    department = "Computer Science & Engineering",
+                    semester = "Semester 4",
+                    fileType = "PDF",
+                    fileSizeFormatted = "2.1 MB",
+                    isBookmarked = false,
+                    isDownloaded = true,
+                    extractedQuestionsJson = """[
+                        "1. What is Functional and Non-Functional Requirement?",
+                        "2. Define Cohesion and Coupling in software architecture.",
+                        "3. Illustrate the Agile Scrum framework lifecycle with sprint events.",
+                        "4. Compare Waterfall vs Spiral Process Models."
+                    ]""",
+                    repeatedQuestionsJson = """[
+                        "Cohesion vs Coupling (Appeared 5 times in Univ papers)",
+                        "Agile Scrum Framework Lifecycle (Appeared in IA-2 2023, 2024)"
+                    ]""",
+                    markCategoriesJson = """{
+                        "2": ["1. What is Functional and Non-Functional Requirement?", "2. Define Cohesion and Coupling in software architecture."],
+                        "5": ["4. Compare Waterfall vs Spiral Process Models."],
+                        "10": [],
+                        "13": ["3. Illustrate the Agile Scrum framework lifecycle with sprint events."],
+                        "16": []
+                    }""",
+                    importantQuestionsJson = """[
+                        "Agile Scrum lifecycle & Sprint ceremonies",
+                        "Cohesion & Coupling types with metrics",
+                        "Use Case & Sequence Diagrams for E-Commerce"
+                    ]""",
+                    generatedAnswersJson = """{
+                        "2. Define Cohesion and Coupling in software architecture.": "Cohesion measures internal strength within a module (aim for High Cohesion). Coupling measures interdependence between modules (aim for Low Coupling)."
+                    }"""
+                ),
+                QuestionPaperEntity(
+                    id = "qp_3",
+                    fileName = "CS8351_DS_IA3_2024.docx",
+                    subject = "Data Structures",
+                    examType = "IA 3",
+                    academicYear = "2024-2025",
+                    department = "Computer Science & Engineering",
+                    semester = "Semester 3",
+                    fileType = "DOCX",
+                    fileSizeFormatted = "1.1 MB",
+                    isBookmarked = true,
+                    isDownloaded = true,
+                    extractedQuestionsJson = """[
+                        "1. Define Balance Factor in AVL Trees.",
+                        "2. What is Collision Resolution in Hashing?",
+                        "3. Construct an AVL Tree by inserting keys: 10, 20, 30, 40, 50, 25.",
+                        "4. Explain Dijkstra's Shortest Path Algorithm on a weighted directed graph."
+                    ]""",
+                    repeatedQuestionsJson = """[
+                        "AVL Tree Rotations (Appeared 6 times in Univ papers)",
+                        "Dijkstra Shortest Path Algorithm (Appeared in IA-3 2022, 2023, 2024)"
+                    ]""",
+                    markCategoriesJson = """{
+                        "2": ["1. Define Balance Factor in AVL Trees.", "2. What is Collision Resolution in Hashing?"],
+                        "5": [],
+                        "10": [],
+                        "13": ["3. Construct an AVL Tree by inserting keys: 10, 20, 30, 40, 50, 25."],
+                        "16": ["4. Explain Dijkstra's Shortest Path Algorithm on a weighted directed graph."]
+                    }""",
+                    importantQuestionsJson = """[
+                        "AVL Tree LL/RR/LR/RL Rotations",
+                        "Dijkstra & Prim's Minimum Spanning Tree",
+                        "Quadratic Probing & Double Hashing"
+                    ]""",
+                    generatedAnswersJson = """{
+                        "1. Define Balance Factor in AVL Trees.": "Balance Factor = Height(Left Subtree) - Height(Right Subtree). For an AVL tree, BF must be -1, 0, or +1."
+                    }"""
+                ),
+                QuestionPaperEntity(
+                    id = "qp_4",
+                    fileName = "CS8691_AI_Model_Exam_2025.pdf",
+                    subject = "Artificial Intelligence",
+                    examType = "Model Exam",
+                    academicYear = "2024-2025",
+                    department = "Computer Science & Engineering",
+                    semester = "Semester 6",
+                    fileType = "PDF",
+                    fileSizeFormatted = "2.4 MB",
+                    isBookmarked = false,
+                    isDownloaded = true,
+                    extractedQuestionsJson = """[
+                        "1. What is First Order Predicate Logic (FOL)?",
+                        "2. Define Bayes Rule for Probabilistic Reasoning.",
+                        "3. Convert sentences into First Order Logic and apply Resolution Refutation.",
+                        "4. Explain Convolutional Neural Networks (CNN) architecture for Image Classification."
+                    ]""",
+                    repeatedQuestionsJson = """[
+                        "FOL Resolution Refutation (Appeared 4 times)",
+                        "Bayes Rule & Bayesian Networks (Appeared 3 times)"
+                    ]""",
+                    markCategoriesJson = """{
+                        "2": ["1. What is First Order Predicate Logic (FOL)?", "2. Define Bayes Rule for Probabilistic Reasoning."],
+                        "5": [],
+                        "10": [],
+                        "13": ["3. Convert sentences into First Order Logic and apply Resolution Refutation."],
+                        "16": ["4. Explain Convolutional Neural Networks (CNN) architecture for Image Classification."]
+                    }""",
+                    importantQuestionsJson = """[
+                        "FOL Resolution Refutation step-by-step",
+                        "CNN Convolution & Pooling layers",
+                        "Markov Decision Process (MDP) Bellman Equation"
+                    ]""",
+                    generatedAnswersJson = """{
+                        "2. Define Bayes Rule for Probabilistic Reasoning.": "P(A|B) = [P(B|A) * P(A)] / P(B). Calculates posterior probability of cause A given evidence B."
+                    }"""
+                ),
+                QuestionPaperEntity(
+                    id = "qp_5",
+                    fileName = "CS8492_DBMS_NovDec2024_Semester.pdf",
+                    subject = "Database Systems",
+                    examType = "Semester Exam",
+                    academicYear = "2024-2025",
+                    department = "Computer Science & Engineering",
+                    semester = "Semester 4",
+                    fileType = "PDF",
+                    fileSizeFormatted = "3.2 MB",
+                    isBookmarked = true,
+                    isDownloaded = true,
+                    extractedQuestionsJson = """[
+                        "1. What is ACID Property in DBMS transactions?",
+                        "2. Differentiate 3NF and BCNF with functional dependencies.",
+                        "3. Explain Two-Phase Locking (2PL) protocol for Concurrency Control.",
+                        "4. Construct B+ Tree Index for sequence of keys."
+                    ]""",
+                    repeatedQuestionsJson = """[
+                        "ACID Properties (Appeared 8 times in Univ papers)",
+                        "3NF vs BCNF Normalization (Appeared 6 times)"
+                    ]""",
+                    markCategoriesJson = """{
+                        "2": ["1. What is ACID Property in DBMS transactions?"],
+                        "5": ["2. Differentiate 3NF and BCNF with functional dependencies."],
+                        "10": [],
+                        "13": ["3. Explain Two-Phase Locking (2PL) protocol for Concurrency Control."],
+                        "16": ["4. Construct B+ Tree Index for sequence of keys."]
+                    }""",
+                    importantQuestionsJson = """[
+                        "2PL & Deadlock handling in DBMS",
+                        "3NF vs BCNF decomposition rules",
+                        "B+ Tree Insertion and Deletion algorithms"
+                    ]""",
+                    generatedAnswersJson = """{
+                        "1. What is ACID Property in DBMS transactions?": "Atomicity (All or nothing), Consistency (Preserves invariants), Isolation (Concurrent execution protection), Durability (Persisted on disk)."
+                    }"""
+                ),
+                QuestionPaperEntity(
+                    id = "qp_6",
+                    fileName = "AnnaUniv_CS8691_AI_AprMay2023.jpg",
+                    subject = "Artificial Intelligence",
+                    examType = "University Previous Year Papers",
+                    academicYear = "2022-2023",
+                    department = "Computer Science & Engineering",
+                    semester = "Semester 6",
+                    fileType = "IMAGE",
+                    fileSizeFormatted = "4.5 MB",
+                    isBookmarked = true,
+                    isDownloaded = true,
+                    extractedQuestionsJson = """[
+                        "1. Define Turing Test in AI.",
+                        "2. State the difference between BFS and Depth First Search.",
+                        "3. Explain Natural Language Processing (NLP) pipeline stages.",
+                        "4. Detail Robot Kinematics and Sensor Integration."
+                    ]""",
+                    repeatedQuestionsJson = """[
+                        "Turing Test Definition (Appeared 5 times in Univ papers)",
+                        "NLP Pipeline Stages (Appeared in 2022, 2023, 2024)"
+                    ]""",
+                    markCategoriesJson = """{
+                        "2": ["1. Define Turing Test in AI.", "2. State the difference between BFS and Depth First Search."],
+                        "5": [],
+                        "10": [],
+                        "13": ["3. Explain Natural Language Processing (NLP) pipeline stages."],
+                        "16": ["4. Detail Robot Kinematics and Sensor Integration."]
+                    }""",
+                    importantQuestionsJson = """[
+                        "NLP Pipeline Tokenization, Parsing, Sentiment",
+                        "Robot Kinematics Forward & Inverse",
+                        "A* Search vs Greedy Best-First Search"
+                    ]""",
+                    generatedAnswersJson = """{
+                        "1. Define Turing Test in AI.": "Proposed by Alan Turing in 1950 to evaluate if a machine can exhibit human-equivalent intelligent behavior through natural language dialogue."
+                    }"""
+                )
+            )
+            appDao.insertQuestionPapers(samplePapers)
         }
     }
 }

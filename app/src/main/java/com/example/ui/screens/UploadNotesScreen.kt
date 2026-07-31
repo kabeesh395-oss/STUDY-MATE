@@ -58,7 +58,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import com.example.ui.components.BrandedLoadingIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
@@ -455,10 +455,10 @@ fun UploadNotesScreen(
                             .padding(16.dp)
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            CircularProgressIndicator(
-                                color = ElectricBlue,
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 3.dp
+                            BrandedLoadingIndicator(
+                                size = 32.dp,
+                                strokeWidth = 2.5.dp,
+                                logoSize = 16.dp
                             )
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {

@@ -1,16 +1,22 @@
 workflows:
-  android-debug:
-    name: Build StudyMate Debug APK
+  android-build:
+    name: Android Build & Release
     max_build_duration: 60
-
+    instance_type: mac_mini_m1
     environment:
-      groups:
-        - google_credentials
-
+      java: 21
+      vars:
+        PACKAGE_NAME: "com.aistudio.studymate.ai.app"
     scripts:
-      - name: Build APK
+      - name: Set up local.properties & permissions
         script: |
-          gradle assembleDebug
-
+          chmod +x gradlew
+      - name: Build Android Debug APK
+        script: |
+          ./gradlew assembleDebug
+      - name: Build Android Release APK & App Bundle
+        script: |
+          ./gradlew assembleRelease bundleRelease
     artifacts:
-      - app/build/outputs/apk/debug/*.apk
+      - app/build/outputs/apk/**/*.apk
+      - app/build/outputs/bundle/**/*.aab

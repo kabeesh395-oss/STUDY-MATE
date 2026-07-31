@@ -1,21 +1,28 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# ProGuard & R8 Optimization Rules for StudyMate
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Keep Room generated code
+-keep class * extends androidx.room.RoomDatabase
+-dontwarn androidx.room.paging.**
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Keep Moshi & Retrofit Models
+-keepattributes Signature, InnerClasses, EnclosingMethod
+-keepattributes *Annotation*
+-dontwarn retrofit2.**
+-keep class retrofit2.** { *; }
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Keep Firebase Models
+-keepattributes *Annotation*
+-keepclassmembers class * {
+    @com.google.firebase.database.IgnoreExtraProperties <fields>;
+    @com.google.firebase.database.IgnoreExtraProperties <methods>;
+}
+
+# Keep Coroutines
+-keepclassmembers class kotlinx.coroutines.** { *; }
+
+# Preserve line numbers for stack trace debugging
+-keepattributes SourceFile,LineNumberTable

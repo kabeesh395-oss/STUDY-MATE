@@ -115,3 +115,25 @@ data class UserProfileEntity(
     val selectedLanguage: String = "English",
     val selectedAiModel: String = "gemini-3.5-flash"
 )
+
+@Entity(tableName = "question_papers")
+data class QuestionPaperEntity(
+    @PrimaryKey val id: String,
+    val fileName: String,
+    val subject: String,
+    val examType: String, // "IA 1", "IA 2", "IA 3", "Model Exam", "Semester Exam", "University Previous Year Papers"
+    val academicYear: String = "2024-2025",
+    val department: String = "Computer Science & Engineering",
+    val semester: String = "Semester 5",
+    val fileType: String = "PDF", // "PDF", "IMAGE", "DOCX"
+    val fileSizeFormatted: String = "1.2 MB",
+    val storagePath: String = "",
+    val uploadDate: Long = System.currentTimeMillis(),
+    val isBookmarked: Boolean = false,
+    val isDownloaded: Boolean = true,
+    val extractedQuestionsJson: String = "[]",
+    val repeatedQuestionsJson: String = "[]",
+    val markCategoriesJson: String = "{}", // e.g. {"2":["q1","q2"],"5":["q3"],"10":[],"13":["q4"],"16":["q5"]}
+    val importantQuestionsJson: String = "[]",
+    val generatedAnswersJson: String = "{}"
+)

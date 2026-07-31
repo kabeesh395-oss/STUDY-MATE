@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    
+    <!-- Outer ambient glow halo for bottom edge -->
+    <path
+        android:pathData="M 22,70 L 58,52"
+        android:strokeColor="#4000E5FF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round" />
+
+    <!-- Main Solid White Lightning Bolt S Body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 75,12 L 41,32 L 68,36 L 22,70 L 58,52 L 31,48 Z" />
+
+    <!-- Electric Blue Neon Glow Edge along bottom-right edge -->
+    <path
+        android:pathData="M 22,70 L 58,52"
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round" />
+
+    <!-- Bright Core Highlight -->
+    <path
+        android:pathData="M 22,70 L 58,52"
+        android:strokeColor="#E0F7FF"
+        android:strokeWidth="1.2"
+        android:strokeLineCap="round" />
+</vector>

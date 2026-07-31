@@ -20,7 +20,7 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.LockReset
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import com.example.ui.components.BrandedLoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -206,10 +206,10 @@ fun ForgotPasswordDialog(
                             .testTag("send_reset_link_btn")
                     ) {
                         if (isLoading) {
-                            CircularProgressIndicator(
-                                color = PrimaryText,
-                                modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.dp
+                            BrandedLoadingIndicator(
+                                size = 22.dp,
+                                strokeWidth = 2.dp,
+                                logoSize = 12.dp
                             )
                         } else {
                             Text("Send Reset Link", color = PrimaryText, fontWeight = FontWeight.Bold, fontSize = 15.sp)

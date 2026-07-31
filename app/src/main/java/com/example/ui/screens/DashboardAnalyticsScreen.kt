@@ -71,7 +71,8 @@ fun DashboardAnalyticsScreen(
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     IconButton(
                         onClick = { viewModel.navigateTo("HOME") },
@@ -82,9 +83,7 @@ fun DashboardAnalyticsScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = PrimaryText)
                     }
 
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
                             text = "Analytics & Performance",
                             style = MaterialTheme.typography.titleLarge,
@@ -98,6 +97,8 @@ fun DashboardAnalyticsScreen(
                             fontSize = 12.sp
                         )
                     }
+
+                    Spacer(modifier = Modifier.size(48.dp))
                 }
             }
 

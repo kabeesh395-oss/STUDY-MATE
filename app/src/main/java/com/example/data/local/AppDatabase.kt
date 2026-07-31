@@ -9,6 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.data.local.dao.AppDao
 import com.example.data.local.entities.ChatMessageEntity
 import com.example.data.local.entities.FlashcardEntity
+import com.example.data.local.entities.QuestionPaperEntity
 import com.example.data.local.entities.QuizQuestionEntity
 import com.example.data.local.entities.StudyNoteEntity
 import com.example.data.local.entities.SubjectEntity
@@ -58,6 +59,34 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("""
+            CREATE TABLE IF NOT EXISTS `question_papers` (
+                `id` TEXT NOT NULL,
+                `fileName` TEXT NOT NULL,
+                `subject` TEXT NOT NULL,
+                `examType` TEXT NOT NULL,
+                `academicYear` TEXT NOT NULL DEFAULT '2024-2025',
+                `department` TEXT NOT NULL DEFAULT 'Computer Science & Engineering',
+                `semester` TEXT NOT NULL DEFAULT 'Semester 5',
+                `fileType` TEXT NOT NULL DEFAULT 'PDF',
+                `fileSizeFormatted` TEXT NOT NULL DEFAULT '1.2 MB',
+                `storagePath` TEXT NOT NULL DEFAULT '',
+                `uploadDate` INTEGER NOT NULL DEFAULT 0,
+                `isBookmarked` INTEGER NOT NULL DEFAULT 0,
+                `isDownloaded` INTEGER NOT NULL DEFAULT 1,
+                `extractedQuestionsJson` TEXT NOT NULL DEFAULT '[]',
+                `repeatedQuestionsJson` TEXT NOT NULL DEFAULT '[]',
+                `markCategoriesJson` TEXT NOT NULL DEFAULT '{}',
+                `importantQuestionsJson` TEXT NOT NULL DEFAULT '[]',
+                `generatedAnswersJson` TEXT NOT NULL DEFAULT '{}',
+                PRIMARY KEY(`id`)
+            )
+        """.trimIndent())
+    }
+}
+
 @Database(
     entities = [
         SubjectEntity::class,
@@ -67,9 +96,10 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
         FlashcardEntity::class,
         QuizQuestionEntity::class,
         ChatMessageEntity::class,
-        UserProfileEntity::class
+        UserProfileEntity::class,
+        QuestionPaperEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -86,7 +116,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "studymate_db"
                 )
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

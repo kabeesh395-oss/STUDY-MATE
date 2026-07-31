@@ -88,32 +88,28 @@ fun RevisionPlannerScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
-                        onClick = { viewModel.navigateTo("HOME") },
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(CardDark)
-                    ) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = PrimaryText)
-                    }
+                IconButton(
+                    onClick = { viewModel.navigateTo("HOME") },
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .background(CardDark)
+                ) {
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = PrimaryText)
+                }
 
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column {
-                        Text(
-                            text = "Smart Revision Schedule",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = PrimaryText
-                        )
-                        Text(
-                            text = "Spaced Repetition (1, 3, 7, 30 Days)",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = SecondaryText,
-                            fontSize = 12.sp
-                        )
-                    }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "Smart Revision Schedule",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryText
+                    )
+                    Text(
+                        text = "Spaced Repetition (1, 3, 7, 30 Days)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = SecondaryText,
+                        fontSize = 12.sp
+                    )
                 }
 
                 IconButton(
