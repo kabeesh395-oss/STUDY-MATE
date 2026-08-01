@@ -15,11 +15,11 @@ workflows:
             echo "Repairing corrupted gradle-wrapper.jar..."
             rm -f gradle/wrapper/gradle-wrapper.jar
             if command -v gradle >/dev/null 2>&1; then
-              gradle wrapper
+              gradle wrapper --gradle-version 9.3.1
             else
-              curl -sSL https://services.gradle.org/distributions/gradle-8.12-bin.zip -o /tmp/gradle.zip
+              curl -sSL https://services.gradle.org/distributions/gradle-9.3.1-bin.zip -o /tmp/gradle.zip
               unzip -q /tmp/gradle.zip -d /tmp/gradle-dist
-              /tmp/gradle-dist/gradle-8.12/bin/gradle wrapper
+              /tmp/gradle-dist/gradle-9.3.1/bin/gradle wrapper --gradle-version 9.3.1
               rm -rf /tmp/gradle.zip /tmp/gradle-dist
             fi
           fi
