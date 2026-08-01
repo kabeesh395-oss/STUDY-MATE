@@ -11,6 +11,18 @@ workflows:
       - name: Set up local.properties & permissions
         script: |
           chmod +x gradlew
+          if ! ./gradlew --version >/dev/null 2>&1; then
+            echo "Repairing corrupted gradle-wrapper.jar..."
+            rm -f gradle/wrapper/gradle-wrapper.jar
+            if command -v gradle >/dev/null 2>&1; then
+              gradle wrapper
+            else
+              curl -sSL https://services.gradle.org/distributions/gradle-8.12-bin.zip -o /tmp/gradle.zip
+              unzip -q /tmp/gradle.zip -d /tmp/gradle-dist
+              /tmp/gradle-dist/gradle-8.12/bin/gradle wrapper
+              rm -rf /tmp/gradle.zip /tmp/gradle-dist
+            fi
+          fi
       - name: Build Android Debug APK
         script: |
           ./gradlew assembleDebug
