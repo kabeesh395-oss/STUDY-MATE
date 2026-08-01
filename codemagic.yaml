@@ -11,11 +11,6 @@ workflows:
       - name: Set up local.properties & permissions
         script: |
           chmod +x gradlew
-          if ! java -jar gradle/wrapper/gradle-wrapper.jar --version >/dev/null 2>&1; then
-            echo "gradle-wrapper.jar is invalid or corrupted. Restoring valid wrapper jar..."
-            mkdir -p gradle/wrapper
-            curl -fSL https://raw.githubusercontent.com/gradle/gradle/v8.12.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
-          fi
       - name: Build Android Debug APK
         script: |
           ./gradlew assembleDebug
