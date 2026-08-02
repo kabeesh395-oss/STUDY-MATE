@@ -27,7 +27,7 @@ jobs:
 
     - name: Validate & repair Gradle Wrapper
       run: |
-        if ! ./gradlew --version >/dev/null 2>&1; then
+        if ! unzip -t gradle/wrapper/gradle-wrapper.jar >/dev/null 2>&1 || ! ./gradlew --version >/dev/null 2>&1; then
           echo "gradle-wrapper.jar is invalid or corrupted. Repairing wrapper..."
           rm -f gradle/wrapper/gradle-wrapper.jar
           GRADLE_VERSION=$(grep 'distributionUrl' gradle/wrapper/gradle-wrapper.properties | sed -n 's/.*gradle-\([0-9.]*\)-.*/\1/p')
@@ -35,6 +35,7 @@ jobs:
           echo "Downloading gradle-wrapper.jar for Gradle $GRADLE_VERSION..."
           curl -sSL -f "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
         fi
+        ./gradlew --version
 
     - name: Build Debug APK with Gradle
       run: ./gradlew assembleDebug --stacktrace
