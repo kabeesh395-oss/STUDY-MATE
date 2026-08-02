@@ -32,6 +32,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BarChart
@@ -637,22 +638,68 @@ fun HomeScreen(
 
             // Subjects Cards List
             item {
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    subjectsList.forEach { subject ->
-                        SubjectCardItem(
-                            subject = subject,
-                            onSelect = {
-                                viewModel.selectSubject(subject)
-                                viewModel.navigateTo("SUBJECT_DETAIL")
-                            },
-                            onAiClick = {
-                                viewModel.selectSubject(subject)
-                                viewModel.navigateTo("AI_CHAT")
-                            },
-                            onToggleFavorite = { viewModel.toggleFavoriteSubject(subject) },
-                            onDelete = { viewModel.deleteSubject(subject.id) }
-                        )
+                var editingSubject by remember { mutableStateOf<SubjectEntity?>(null) }
+
+                if (subjectsList.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Default.Folder,
+                                contentDescription = null,
+                                tint = MutedText,
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "No Subjects Available",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = PrimaryText
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Tap '+' below to create a new subject and syllabus units.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = SecondaryText,
+                                fontSize = 12.sp
+                            )
+                        }
                     }
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        subjectsList.forEach { subject ->
+                            SubjectCardItem(
+                                subject = subject,
+                                onSelect = {
+                                    viewModel.selectSubject(subject)
+                                    viewModel.navigateTo("SUBJECT_DETAIL")
+                                },
+                                onAiClick = {
+                                    viewModel.selectSubject(subject)
+                                    viewModel.navigateTo("AI_CHAT")
+                                },
+                                onToggleFavorite = { viewModel.toggleFavoriteSubject(subject) },
+                                onEdit = { editingSubject = subject },
+                                onDelete = { viewModel.deleteSubject(subject.id) }
+                            )
+                        }
+                    }
+                }
+
+                if (editingSubject != null) {
+                    EditSubjectDialog(
+                        subject = editingSubject!!,
+                        onDismiss = { editingSubject = null },
+                        onSave = { updated ->
+                            viewModel.updateSubject(updated)
+                            editingSubject = null
+                        }
+                    )
                 }
             }
         }
@@ -746,6 +793,7 @@ fun SubjectCardItem(
     onSelect: () -> Unit,
     onAiClick: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onEdit: () -> Unit = {},
     onDelete: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -837,6 +885,14 @@ fun SubjectCardItem(
                             }
                         )
                         DropdownMenuItem(
+                            text = { Text("Edit Subject", color = PrimaryText) },
+                            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, tint = ElectricBlue) },
+                            onClick = {
+                                onEdit()
+                                showMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
                             text = { Text("Delete Subject", color = MaterialTheme.colorScheme.error) },
                             leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
                             onClick = {
@@ -916,6 +972,43 @@ fun SubjectCardItem(
 }
 
 @Composable
+fun CategorySelector(
+    selectedCategory: String,
+    onCategorySelected: (String) -> Unit
+) {
+    val categories = listOf("AI", "CODE", "DATA", "MATH", "TECH")
+    Column {
+        Text("Category Icon", style = MaterialTheme.typography.labelMedium, color = SecondaryText, fontSize = 11.sp)
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            categories.forEach { cat ->
+                val isSelected = cat == selectedCategory
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (isSelected) ElectricBlue else SurfaceDark)
+                        .border(1.dp, if (isSelected) ElectricBlue else GlassBorder, RoundedCornerShape(10.dp))
+                        .clickable { onCategorySelected(cat) }
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = cat,
+                        color = if (isSelected) Color.White else SecondaryText,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun CreateSubjectDialog(
     onDismiss: () -> Unit,
     onCreate: (name: String, code: String, sem: String, category: String) -> Unit
@@ -952,6 +1045,10 @@ fun CreateSubjectDialog(
                     label = { Text("Semester", color = SecondaryText) },
                     modifier = Modifier.fillMaxWidth()
                 )
+                CategorySelector(
+                    selectedCategory = category,
+                    onCategorySelected = { category = it }
+                )
             }
         },
         confirmButton = {
@@ -962,6 +1059,74 @@ fun CreateSubjectDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue)
             ) {
                 Text("Create Subject", color = PrimaryText)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = SecondaryText)
+            }
+        },
+        containerColor = SurfaceDark
+    )
+}
+
+@Composable
+fun EditSubjectDialog(
+    subject: SubjectEntity,
+    onDismiss: () -> Unit,
+    onSave: (SubjectEntity) -> Unit
+) {
+    var name by remember { mutableStateOf(subject.name) }
+    var code by remember { mutableStateOf(subject.code) }
+    var semester by remember { mutableStateOf(subject.semester) }
+    var category by remember { mutableStateOf(subject.iconCategory) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Subject", color = PrimaryText, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Subject Name", color = SecondaryText) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = code,
+                    onValueChange = { code = it },
+                    label = { Text("Subject Code", color = SecondaryText) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = semester,
+                    onValueChange = { semester = it },
+                    label = { Text("Semester", color = SecondaryText) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                CategorySelector(
+                    selectedCategory = category,
+                    onCategorySelected = { category = it }
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (name.isNotBlank()) {
+                        onSave(
+                            subject.copy(
+                                name = name.trim(),
+                                code = code.trim(),
+                                semester = semester.trim(),
+                                iconCategory = category
+                            )
+                        )
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue)
+            ) {
+                Text("Save Changes", color = PrimaryText)
             }
         },
         dismissButton = {

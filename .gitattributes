@@ -9,5 +9,12 @@
 *.so binary
 *.class binary
 
+# Script line endings
+gradlew text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
 # Auto detect text files and perform LF normalization
 * text=auto eol=lf
+

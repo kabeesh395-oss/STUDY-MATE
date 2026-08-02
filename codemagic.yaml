@@ -10,8 +10,10 @@ workflows:
     scripts:
       - name: Set up permissions & Gradle wrapper
         script: |
+          sed -i '' 's/\r$//' gradlew 2>/dev/null || sed -i 's/\r$//' gradlew 2>/dev/null || true
           chmod +x gradlew
-          if ! unzip -t gradle/wrapper/gradle-wrapper.jar >/dev/null 2>&1 || ! ./gradlew --version >/dev/null 2>&1; then
+          mkdir -p gradle/wrapper
+          if [ ! -f gradle/wrapper/gradle-wrapper.jar ] || ! unzip -t gradle/wrapper/gradle-wrapper.jar >/dev/null 2>&1 || ! ./gradlew --version >/dev/null 2>&1; then
             echo "Repairing corrupted gradle-wrapper.jar..."
             rm -f gradle/wrapper/gradle-wrapper.jar
             GRADLE_VERSION=$(grep 'distributionUrl' gradle/wrapper/gradle-wrapper.properties | sed -n 's/.*gradle-\([0-9.]*\)-.*/\1/p')
@@ -24,4 +26,5 @@ workflows:
           ./gradlew assembleDebug
     artifacts:
       - app/build/outputs/apk/**/*.apk
+
 

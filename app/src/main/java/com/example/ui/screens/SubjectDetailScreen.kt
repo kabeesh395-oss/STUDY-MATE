@@ -22,7 +22,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Description
@@ -87,6 +97,9 @@ fun SubjectDetailScreen(
         }
         return
     }
+
+    var showAddUnitDialog by remember { mutableStateOf(false) }
+    var editingUnit by remember { mutableStateOf<UnitEntity?>(null) }
 
     Box(
         modifier = modifier
@@ -185,17 +198,29 @@ fun SubjectDetailScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "Syllabus & Units",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryText
-                    )
-                    Text(
-                        text = "${units.size} Units",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = SecondaryText
-                    )
+                    Column {
+                        Text(
+                            text = "Syllabus & Units",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryText
+                        )
+                        Text(
+                            text = "${units.size} Units",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = SecondaryText
+                        )
+                    }
+
+                    Button(
+                        onClick = { showAddUnitDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = SurfaceDark),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = "Add Unit", tint = ElectricBlue, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Add Unit", color = PrimaryText, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 
@@ -203,6 +228,8 @@ fun SubjectDetailScreen(
             items(units) { unit ->
                 UnitCardItem(
                     unit = unit,
+                    onEdit = { editingUnit = unit },
+                    onDelete = { viewModel.deleteUnit(unit.id) },
                     onActionClick = { action ->
                         viewModel.selectUnit(unit)
                         when (action) {
@@ -218,15 +245,39 @@ fun SubjectDetailScreen(
                 )
             }
         }
+
+        if (showAddUnitDialog) {
+            AddUnitDialog(
+                onDismiss = { showAddUnitDialog = false },
+                onAdd = { title ->
+                    viewModel.addUnit(sub.id, title)
+                    showAddUnitDialog = false
+                }
+            )
+        }
+
+        if (editingUnit != null) {
+            EditUnitDialog(
+                unit = editingUnit!!,
+                onDismiss = { editingUnit = null },
+                onSave = { updated ->
+                    viewModel.updateUnit(updated)
+                    editingUnit = null
+                }
+            )
+        }
     }
 }
 
 @Composable
 fun UnitCardItem(
     unit: UnitEntity,
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {},
     onActionClick: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(true) }
+    var showMenu by remember { mutableStateOf(false) }
 
     GlassCard(
         modifier = Modifier
@@ -248,7 +299,10 @@ fun UnitCardItem(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Box(
                         modifier = Modifier
                             .size(36.dp)
@@ -279,6 +333,35 @@ fun UnitCardItem(
                             style = MaterialTheme.typography.bodyMedium,
                             fontSize = 11.sp,
                             color = SecondaryText
+                        )
+                    }
+                }
+
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Unit Options", tint = SecondaryText)
+                    }
+
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        modifier = Modifier.background(SurfaceDark)
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Edit Title", color = PrimaryText) },
+                            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, tint = ElectricBlue) },
+                            onClick = {
+                                onEdit()
+                                showMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Delete Unit", color = MaterialTheme.colorScheme.error) },
+                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                            onClick = {
+                                onDelete()
+                                showMenu = false
+                            }
                         )
                     }
                 }
@@ -342,4 +425,83 @@ fun UnitActionButton(
             )
         }
     }
+}
+
+@Composable
+fun AddUnitDialog(
+    onDismiss: () -> Unit,
+    onAdd: (title: String) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add New Unit", color = PrimaryText, fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Unit Title (e.g. Deep Learning & Neural Nets)", color = SecondaryText) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (title.isNotBlank()) onAdd(title)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue)
+            ) {
+                Text("Add Unit", color = PrimaryText)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = SecondaryText)
+            }
+        },
+        containerColor = SurfaceDark
+    )
+}
+
+@Composable
+fun EditUnitDialog(
+    unit: UnitEntity,
+    onDismiss: () -> Unit,
+    onSave: (UnitEntity) -> Unit
+) {
+    var title by remember { mutableStateOf(unit.title) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Unit ${unit.unitNumber}", color = PrimaryText, fontWeight = FontWeight.Bold) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Unit Title", color = SecondaryText) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (title.isNotBlank()) onSave(unit.copy(title = title.trim()))
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue)
+            ) {
+                Text("Save Changes", color = PrimaryText)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = SecondaryText)
+            }
+        },
+        containerColor = SurfaceDark
+    )
 }

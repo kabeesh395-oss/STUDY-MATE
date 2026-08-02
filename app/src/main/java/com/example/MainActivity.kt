@@ -66,6 +66,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Ensure Firebase App is initialized
+        try {
+            if (com.google.firebase.FirebaseApp.getApps(this).isEmpty()) {
+                com.google.firebase.FirebaseApp.initializeApp(this)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "Firebase init warning: ${e.message}")
+        }
+
         // Initialize StudyMate AI Notification Channels and Manager
         val notificationManager = StudyNotificationManager.getInstance(this)
 

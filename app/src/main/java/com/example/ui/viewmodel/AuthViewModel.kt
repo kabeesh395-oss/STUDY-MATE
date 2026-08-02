@@ -184,12 +184,14 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     private fun formatAuthError(e: Throwable): String {
         val msg = e.message ?: ""
         return when {
+            msg.contains("Firebase Auth is unavailable", ignoreCase = true) ->
+                "Firebase Auth is initializing or currently unreachable. Please check your internet connection or try again in a moment."
             msg.contains("The email address is badly formatted", ignoreCase = true) -> "Invalid email address format."
             msg.contains("The password is invalid", ignoreCase = true) || msg.contains("invalid-credential", ignoreCase = true) -> "Incorrect email or password."
             msg.contains("The email address is already in use", ignoreCase = true) -> "An account already exists with this email address."
             msg.contains("user-not-found", ignoreCase = true) -> "No account found with this email."
-            msg.contains("network", ignoreCase = true) -> "Network error. Please check your internet connection."
-            else -> msg.ifBlank { "Authentication failed. Please try again." }
+            msg.contains("network", ignoreCase = true) || msg.contains("UNAVAILABLE", ignoreCase = true) -> "Network error. Please check your internet connection."
+            else -> msg.ifBlank { "Authentication failed. Please check your internet connection and credentials." }
         }
     }
 }

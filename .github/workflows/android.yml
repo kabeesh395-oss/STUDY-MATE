@@ -20,15 +20,17 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '17'
-        cache: 'gradle'
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
 
-    - name: Validate & repair Gradle Wrapper
+    - name: Validate & prepare Gradle Wrapper
       run: |
-        if ! unzip -t gradle/wrapper/gradle-wrapper.jar >/dev/null 2>&1 || ! ./gradlew --version >/dev/null 2>&1; then
-          echo "gradle-wrapper.jar is invalid or corrupted. Repairing wrapper..."
+        sed -i 's/\r$//' gradlew
+        chmod +x gradlew
+        mkdir -p gradle/wrapper
+        if [ ! -f gradle/wrapper/gradle-wrapper.jar ] || ! unzip -t gradle/wrapper/gradle-wrapper.jar >/dev/null 2>&1; then
+          echo "gradle-wrapper.jar is missing or corrupted. Repairing wrapper..."
           rm -f gradle/wrapper/gradle-wrapper.jar
           GRADLE_VERSION=$(grep 'distributionUrl' gradle/wrapper/gradle-wrapper.properties | sed -n 's/.*gradle-\([0-9.]*\)-.*/\1/p')
           if [ -z "$GRADLE_VERSION" ]; then GRADLE_VERSION="9.3.1"; fi
@@ -45,3 +47,4 @@ jobs:
       with:
         name: app-debug
         path: app/build/outputs/apk/debug/*.apk
+

@@ -42,7 +42,31 @@ interface AppDao {
     fun getUnitsForSubject(subjectId: String): Flow<List<UnitEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertUnit(unit: UnitEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUnits(units: List<UnitEntity>)
+
+    @Update
+    suspend fun updateUnit(unit: UnitEntity)
+
+    @Query("DELETE FROM units WHERE id = :unitId")
+    suspend fun deleteUnitById(unitId: String)
+
+    @Query("DELETE FROM units WHERE subjectId = :subjectId")
+    suspend fun deleteUnitsForSubject(subjectId: String)
+
+    @Query("DELETE FROM study_notes WHERE subjectId = :subjectId")
+    suspend fun deleteNotesForSubject(subjectId: String)
+
+    @Query("DELETE FROM uploaded_files WHERE subjectId = :subjectId")
+    suspend fun deleteUploadedFilesForSubject(subjectId: String)
+
+    @Query("DELETE FROM flashcards WHERE subjectId = :subjectId")
+    suspend fun deleteFlashcardsForSubject(subjectId: String)
+
+    @Query("DELETE FROM quiz_questions WHERE subjectId = :subjectId")
+    suspend fun deleteQuizQuestionsForSubject(subjectId: String)
 
     // Notes
     @Query("SELECT * FROM study_notes WHERE subjectId = :subjectId AND unitId = :unitId ORDER BY uploadedAt DESC")
@@ -128,6 +152,9 @@ interface AppDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertQuestionPapers(papers: List<QuestionPaperEntity>)
+
+    @Query("SELECT * FROM question_papers WHERE id = :paperId LIMIT 1")
+    suspend fun getQuestionPaperById(paperId: String): QuestionPaperEntity?
 
     @Query("DELETE FROM question_papers WHERE id = :paperId")
     suspend fun deleteQuestionPaperById(paperId: String)

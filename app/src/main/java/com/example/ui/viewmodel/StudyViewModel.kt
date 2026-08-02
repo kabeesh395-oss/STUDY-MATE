@@ -1,6 +1,7 @@
 package com.example.ui.viewmodel
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.AppDatabase
@@ -140,7 +141,7 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
     init {
         viewModelScope.launch {
             try {
-                repository.seedInitialDataIfEmpty()
+                repository.seedInitialDataIfEmpty(getApplication())
             } catch (e: Exception) {
                 // Log or ignore seeding errors gracefully
             }
@@ -175,7 +176,21 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
     // Toggle Favorite Subject
     fun toggleFavoriteSubject(subject: SubjectEntity) {
         viewModelScope.launch {
-            repository.updateSubject(subject.copy(isFavorite = !subject.isFavorite))
+            val updated = subject.copy(isFavorite = !subject.isFavorite)
+            repository.updateSubject(updated)
+            if (_selectedSubject.value?.id == subject.id) {
+                _selectedSubject.value = updated
+            }
+        }
+    }
+
+    // Update Subject
+    fun updateSubject(subject: SubjectEntity) {
+        viewModelScope.launch {
+            repository.updateSubject(subject)
+            if (_selectedSubject.value?.id == subject.id) {
+                _selectedSubject.value = subject
+            }
         }
     }
 
@@ -185,6 +200,7 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
             repository.deleteSubject(subjectId)
             if (_selectedSubject.value?.id == subjectId) {
                 _selectedSubject.value = null
+                _unitsForSelectedSubject.value = emptyList()
                 _currentScreen.value = "HOME"
             }
         }
@@ -192,21 +208,29 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
 
     // Create New Subject
     fun createSubject(name: String, code: String, semester: String, iconCategory: String) {
+        val trimmedName = name.trim()
+        val trimmedCode = code.trim().ifBlank { "CS${(1000..9999).random()}" }
+        val trimmedSemester = semester.trim().ifBlank { "Semester 5" }
+        val cat = iconCategory.trim().ifBlank { "AI" }
+
         viewModelScope.launch {
-            val id = "sub_" + UUID.randomUUID().toString().take(6)
+            // Unique ID combining timestamp and random hex to guarantee non-duplicate IDs
+            val id = "sub_${System.currentTimeMillis()}_${UUID.randomUUID().toString().take(4)}"
+            val nextOrder = (subjects.value.maxOfOrNull { it.displayOrder } ?: 0) + 1
+            
             val newSub = SubjectEntity(
                 id = id,
-                name = name,
-                code = code,
-                semester = semester,
+                name = trimmedName,
+                code = trimmedCode,
+                semester = trimmedSemester,
                 completionPercentage = 0,
                 isFavorite = false,
-                iconCategory = iconCategory,
-                displayOrder = (subjects.value.maxOfOrNull { it.displayOrder } ?: 0) + 1
+                iconCategory = cat,
+                displayOrder = nextOrder
             )
             repository.addSubject(newSub)
 
-            // Add default 5 units
+            // Add default 5 units with guaranteed unique IDs
             val units = listOf(
                 UnitEntity("${id}_u1", id, 1, "Fundamentals & Core Principles", 0),
                 UnitEntity("${id}_u2", id, 2, "Architecture & Design", 0),
@@ -216,6 +240,30 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
             )
             repository.appDao.insertUnits(units)
             addXpPoints(50)
+        }
+    }
+
+    // Unit Management
+    fun addUnit(subjectId: String, title: String) {
+        val trimmedTitle = title.trim().ifBlank { "New Syllabus Unit" }
+        viewModelScope.launch {
+            val currentUnits = _unitsForSelectedSubject.value
+            val nextNumber = (currentUnits.maxOfOrNull { it.unitNumber } ?: 0) + 1
+            val unitId = "${subjectId}_u_${System.currentTimeMillis()}_${UUID.randomUUID().toString().take(4)}"
+            val newUnit = UnitEntity(unitId, subjectId, nextNumber, trimmedTitle, 0)
+            repository.addUnit(newUnit)
+        }
+    }
+
+    fun updateUnit(unit: UnitEntity) {
+        viewModelScope.launch {
+            repository.updateUnit(unit)
+        }
+    }
+
+    fun deleteUnit(unitId: String) {
+        viewModelScope.launch {
+            repository.deleteUnit(unitId)
         }
     }
 
@@ -701,98 +749,65 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun uploadQuestionPaper(
-        fileName: String,
+    fun uploadQuestionPapers(
+        context: Context,
+        uris: List<android.net.Uri>,
+        fileNameTitle: String,
         subject: String,
         examType: String,
         academicYear: String,
         department: String,
         semester: String,
-        fileType: String
+        fileType: String,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
     ) {
+        if (uris.isEmpty()) {
+            onError("No documents selected. Please select at least one file.")
+            return
+        }
+
         viewModelScope.launch {
             _isProcessingPaperUpload.value = true
-            _paperUploadProgressText.value = "Uploading $fileName to Firebase Storage..."
-            kotlinx.coroutines.delay(800)
-
-            _paperUploadProgressText.value = "Extracting questions via Gemini AI..."
-            kotlinx.coroutines.delay(1000)
-
-            _paperUploadProgressText.value = "Categorizing 2, 5, 10, 13 & 16 Marks..."
-            kotlinx.coroutines.delay(800)
-
-            _paperUploadProgressText.value = "Detecting repeated questions & generating model answers..."
-            kotlinx.coroutines.delay(800)
-
-            val newId = "qp_${System.currentTimeMillis()}"
-            val cleanFileName = if (fileName.contains(".")) fileName else "$fileName.${fileType.lowercase()}"
-
-            // Generate sample extracted questions tailored to subject
-            val sampleExtracted = listOf(
-                "1. State the fundamental theorem of $subject.",
-                "2. Define key architectural components and execution bounds.",
-                "3. Explain $subject system implementation with block diagram and equations.",
-                "4. Compare $subject core strategies for high performance.",
-                "5. Solve real-world problem scenario using $subject algorithms."
-            )
-
-            val sampleExtractedJson = "[\"" + sampleExtracted.joinToString("\", \"") + "\"]"
-
-            val sampleMarkCategoriesJson = """{
-                "2": ["1. State the fundamental theorem of $subject.", "2. Define key architectural components and execution bounds."],
-                "5": ["4. Compare $subject core strategies for high performance."],
-                "10": [],
-                "13": ["3. Explain $subject system implementation with block diagram and equations."],
-                "16": ["5. Solve real-world problem scenario using $subject algorithms."]
-            }"""
-
-            val sampleRepeatedJson = """[
-                "Fundamental theorem of $subject (Appeared in 2023, 2024 $examType)",
-                "$subject system architecture block diagram (Appeared 3 times in Anna Univ papers)"
-            ]"""
-
-            val sampleImportantJson = """[
-                "$subject core principles and mathematical derivations",
-                "High probability 13-Mark & 16-Mark university exam questions"
-            ]"""
-
-            val sampleAnswersJson = """{
-                "1. State the fundamental theorem of $subject.": "The fundamental theorem establishes the core mathematical formulation governing system stability and logarithmic search complexity.",
-                "3. Explain $subject system implementation with block diagram and equations.": "The system processes input sequences, applies transformation layers, and optimizes cost functions for optimal output accuracy."
-            }"""
-
-            val newPaper = QuestionPaperEntity(
-                id = newId,
-                fileName = cleanFileName,
-                subject = subject,
-                examType = examType,
-                academicYear = academicYear,
-                department = department,
-                semester = semester,
-                fileType = fileType,
-                fileSizeFormatted = "${(10..45).random() / 10.0} MB",
-                storagePath = "gs://studymate-ai.appspot.com/question_papers/$newId/$cleanFileName",
-                uploadDate = System.currentTimeMillis(),
-                isBookmarked = false,
-                isDownloaded = true,
-                extractedQuestionsJson = sampleExtractedJson,
-                repeatedQuestionsJson = sampleRepeatedJson,
-                markCategoriesJson = sampleMarkCategoriesJson,
-                importantQuestionsJson = sampleImportantJson,
-                generatedAnswersJson = sampleAnswersJson
-            )
-
-            repository.saveQuestionPaper(newPaper)
-            addXpAndCoins(50, 15)
-
-            _isProcessingPaperUpload.value = false
-            _paperUploadProgressText.value = ""
+            _paperUploadProgressText.value = "Starting document upload..."
 
             try {
-                com.example.utils.StudyNotificationManager.getInstance(getApplication())
-                    .sendDownloadCompleteNotification(cleanFileName, examType)
+                val savedPapers = repository.processAndSaveUploadedDocuments(
+                    context = context,
+                    uris = uris,
+                    subject = subject,
+                    examType = examType,
+                    academicYear = academicYear,
+                    department = department,
+                    semester = semester,
+                    customTitle = fileNameTitle.ifBlank { null },
+                    fileTypeOverride = fileType,
+                    onProgress = { step ->
+                        _paperUploadProgressText.value = step
+                    }
+                )
+
+                addXpAndCoins(50 * savedPapers.size, 15 * savedPapers.size)
+
+                _isProcessingPaperUpload.value = false
+                _paperUploadProgressText.value = ""
+
+                try {
+                    val first = savedPapers.firstOrNull()
+                    if (first != null) {
+                        com.example.utils.StudyNotificationManager.getInstance(getApplication())
+                            .sendDownloadCompleteNotification(first.fileName, first.examType)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+
+                onSuccess()
             } catch (e: Exception) {
                 e.printStackTrace()
+                _isProcessingPaperUpload.value = false
+                _paperUploadProgressText.value = ""
+                onError(e.localizedMessage ?: "Failed to upload document. Please check file and try again.")
             }
         }
     }

@@ -2,9 +2,12 @@ package com.example.ui.screens
 
 import android.content.Intent
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,6 +37,7 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
@@ -51,6 +56,8 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import com.example.ui.components.BrandedLoadingIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -488,12 +495,7 @@ fun QuestionPaperBankScreen(
                             },
                             onDeleteClick = { paperToDelete = paper },
                             onShareClick = {
-                                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(Intent.EXTRA_SUBJECT, paper.fileName)
-                                    putExtra(Intent.EXTRA_TEXT, "Check out this ${paper.examType} question paper for ${paper.subject} on StudyMate AI!\nFile: ${paper.fileName}")
-                                }
-                                context.startActivity(Intent.createChooser(shareIntent, "Share Question Paper"))
+                                shareQuestionPaperFile(context, paper)
                             }
                         )
                     }
@@ -519,16 +521,24 @@ fun QuestionPaperBankScreen(
             UploadPaperModal(
                 availableSubjects = availableSubjects.filter { it != "ALL" },
                 onDismiss = { showUploadDialog = false },
-                onUploadConfirmed = { fileName, subject, examType, academicYear, department, semester, fileType ->
+                onUploadConfirmed = { uris, fileName, subject, examType, academicYear, department, semester, fileType ->
                     showUploadDialog = false
-                    viewModel.uploadQuestionPaper(
-                        fileName = fileName,
+                    viewModel.uploadQuestionPapers(
+                        context = context,
+                        uris = uris,
+                        fileNameTitle = fileName,
                         subject = subject,
                         examType = examType,
                         academicYear = academicYear,
                         department = department,
                         semester = semester,
-                        fileType = fileType
+                        fileType = fileType,
+                        onSuccess = {
+                            Toast.makeText(context, "Document(s) uploaded and saved to offline database!", Toast.LENGTH_LONG).show()
+                        },
+                        onError = { errorMsg ->
+                            Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
+                        }
                     )
                 }
             )
@@ -963,6 +973,7 @@ fun PaperDetailViewerModal(
     onToggleBookmark: () -> Unit,
     onDownload: () -> Unit
 ) {
+    val context = LocalContext.current
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabTitles = listOf("Extracted Questions", "Repeated Questions", "AI Important", "Model Answers")
 
@@ -1057,6 +1068,20 @@ fun PaperDetailViewerModal(
                     }
 
                     Row {
+                        IconButton(onClick = { openQuestionPaperFile(context, paper) }) {
+                            Icon(
+                                imageVector = Icons.Default.OpenInNew,
+                                contentDescription = "Open Document",
+                                tint = NeonCyan
+                            )
+                        }
+                        IconButton(onClick = { shareQuestionPaperFile(context, paper) }) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "Share Document",
+                                tint = CyberPurple
+                            )
+                        }
                         IconButton(onClick = onToggleBookmark) {
                             Icon(
                                 imageVector = if (paper.isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
@@ -1275,14 +1300,26 @@ fun PaperDetailViewerModal(
             }
         },
         confirmButton = {
-            Button(
-                onClick = onDownload,
-                colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
-                shape = RoundedCornerShape(10.dp)
-            ) {
-                Icon(Icons.Default.Download, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Download Offline", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = { openQuestionPaperFile(context, paper) },
+                    colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(Icons.Default.OpenInNew, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Open File", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+                Button(
+                    onClick = { shareQuestionPaperFile(context, paper) },
+                    colors = ButtonDefaults.buttonColors(containerColor = BgDark),
+                    border = BorderStroke(1.dp, GlassBorder),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(Icons.Default.Share, contentDescription = null, tint = PrimaryText, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Share", color = PrimaryText, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
             }
         },
         dismissButton = {
@@ -1297,9 +1334,20 @@ fun PaperDetailViewerModal(
 @Composable
 fun UploadPaperModal(
     availableSubjects: List<String>,
+    initialUris: List<android.net.Uri> = emptyList(),
     onDismiss: () -> Unit,
-    onUploadConfirmed: (fileName: String, subject: String, examType: String, academicYear: String, department: String, semester: String, fileType: String) -> Unit
+    onUploadConfirmed: (
+        uris: List<android.net.Uri>,
+        fileName: String,
+        subject: String,
+        examType: String,
+        academicYear: String,
+        department: String,
+        semester: String,
+        fileType: String
+    ) -> Unit
 ) {
+    var selectedUris by remember { mutableStateOf(initialUris) }
     var fileName by remember { mutableStateOf("") }
     var selectedSubject by remember { mutableStateOf(availableSubjects.firstOrNull() ?: "Artificial Intelligence") }
     var selectedExamType by remember { mutableStateOf("IA 1") }
@@ -1309,8 +1357,16 @@ fun UploadPaperModal(
     var selectedFileType by remember { mutableStateOf("PDF") }
 
     val examTypes = listOf("IA 1", "IA 2", "IA 3", "Model Exam", "Semester Exam", "University Previous Year Papers")
-    val fileTypes = listOf("PDF", "IMAGE", "DOCX")
-    val yearOptions = listOf("2024-2025", "2023-2024", "2022-2023", "2021-2022")
+    val fileTypes = listOf("PDF", "IMAGE", "DOCX", "PPT")
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    val documentPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents()
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            selectedUris = uris
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1318,7 +1374,7 @@ fun UploadPaperModal(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.UploadFile, contentDescription = null, tint = ElectricBlue)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Upload Question Paper", color = PrimaryText, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("Upload Document / Paper", color = PrimaryText, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
         },
         text = {
@@ -1328,10 +1384,55 @@ fun UploadPaperModal(
                     .padding(vertical = 4.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                // File Picker Selection Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { documentPickerLauncher.launch("*/*") },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(containerColor = BgDark),
+                    border = BorderStroke(1.dp, if (selectedUris.isNotEmpty()) ElectricBlue else GlassBorder)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (selectedUris.isNotEmpty()) Icons.Default.CheckCircle else Icons.Default.CloudUpload,
+                            contentDescription = null,
+                            tint = if (selectedUris.isNotEmpty()) NeonCyan else ElectricBlue,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (selectedUris.isEmpty()) "Tap to select document(s) from device" else "Selected ${selectedUris.size} document(s)",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = PrimaryText
+                            )
+                            Text(
+                                text = if (selectedUris.isEmpty()) "PDF, PPT, PPTX, DOC, DOCX, JPG, PNG" else "Tap to change document selection",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = SecondaryText,
+                                fontSize = 10.sp
+                            )
+                        }
+                        Button(
+                            onClick = { documentPickerLauncher.launch("*/*") },
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue.copy(alpha = 0.2f)),
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Text("Browse", color = ElectricBlue, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
                 OutlinedTextField(
                     value = fileName,
                     onValueChange = { fileName = it },
-                    label = { Text("Paper Title / File Name", color = SecondaryText, fontSize = 12.sp) },
+                    label = { Text("Title / File Name (Optional)", color = SecondaryText, fontSize = 12.sp) },
                     placeholder = { Text("e.g. CS8691 AI IA1 2024", color = MutedText, fontSize = 11.sp) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = PrimaryText,
@@ -1360,8 +1461,8 @@ fun UploadPaperModal(
                     }
                 }
 
-                // File Type Chips (PDF, Image, DOCX)
-                Text("File Format:", color = PrimaryText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                // File Type Chips (PDF, Image, DOCX, PPT)
+                Text("File Format / Category:", color = PrimaryText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     fileTypes.forEach { ft ->
                         FilterChip(
@@ -1416,8 +1517,14 @@ fun UploadPaperModal(
         confirmButton = {
             Button(
                 onClick = {
+                    if (selectedUris.isEmpty()) {
+                        Toast.makeText(context, "Please select at least one document from device", Toast.LENGTH_SHORT).show()
+                        documentPickerLauncher.launch("*/*")
+                        return@Button
+                    }
                     val title = if (fileName.isBlank()) "$selectedSubject $selectedExamType $selectedYear" else fileName.trim()
                     onUploadConfirmed(
+                        selectedUris,
                         title,
                         selectedSubject.trim(),
                         selectedExamType,
@@ -1439,4 +1546,69 @@ fun UploadPaperModal(
         },
         containerColor = CardDark
     )
+}
+
+fun openQuestionPaperFile(context: android.content.Context, paper: com.example.data.local.entities.QuestionPaperEntity) {
+    if (paper.storagePath.isBlank()) {
+        Toast.makeText(context, "No local file path attached to this document", Toast.LENGTH_SHORT).show()
+        return
+    }
+    val file = java.io.File(paper.storagePath)
+    if (!file.exists()) {
+        Toast.makeText(context, "Local file not found on device storage", Toast.LENGTH_SHORT).show()
+        return
+    }
+    try {
+        val authority = "${context.packageName}.fileprovider"
+        val contentUri = androidx.core.content.FileProvider.getUriForFile(context, authority, file)
+        val ext = paper.fileType.uppercase()
+        val mimeType = when (ext) {
+            "PDF" -> "application/pdf"
+            "IMAGE", "JPG", "PNG", "JPEG" -> "image/*"
+            "PPT", "PPTX" -> "application/vnd.ms-powerpoint"
+            "DOC", "DOCX" -> "application/msword"
+            else -> "*/*"
+        }
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(contentUri, mimeType)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(intent, "Open Document With..."))
+    } catch (e: Exception) {
+        Toast.makeText(context, "No app found to open ${paper.fileType} file", Toast.LENGTH_SHORT).show()
+    }
+}
+
+fun shareQuestionPaperFile(context: android.content.Context, paper: com.example.data.local.entities.QuestionPaperEntity) {
+    if (paper.storagePath.isBlank()) {
+        Toast.makeText(context, "No local file attached for sharing", Toast.LENGTH_SHORT).show()
+        return
+    }
+    val file = java.io.File(paper.storagePath)
+    if (!file.exists()) {
+        Toast.makeText(context, "Local file not found on device storage", Toast.LENGTH_SHORT).show()
+        return
+    }
+    try {
+        val authority = "${context.packageName}.fileprovider"
+        val contentUri = androidx.core.content.FileProvider.getUriForFile(context, authority, file)
+        val ext = paper.fileType.uppercase()
+        val mimeType = when (ext) {
+            "PDF" -> "application/pdf"
+            "IMAGE", "JPG", "PNG", "JPEG" -> "image/*"
+            "PPT", "PPTX" -> "application/vnd.ms-powerpoint"
+            "DOC", "DOCX" -> "application/msword"
+            else -> "*/*"
+        }
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = mimeType
+            putExtra(Intent.EXTRA_STREAM, contentUri)
+            putExtra(Intent.EXTRA_SUBJECT, paper.fileName)
+            putExtra(Intent.EXTRA_TEXT, "Check out ${paper.fileName} (${paper.subject} ${paper.examType}) on StudyMate AI!")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(intent, "Share Document via..."))
+    } catch (e: Exception) {
+        Toast.makeText(context, "Unable to share file: ${e.message}", Toast.LENGTH_SHORT).show()
+    }
 }

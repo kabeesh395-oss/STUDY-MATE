@@ -88,14 +88,6 @@ import com.example.ui.theme.SecondaryText
 import com.example.ui.theme.SurfaceDark
 import com.example.ui.viewmodel.StudyViewModel
 
-/*
- * TODO: [GEMINI API INTEGRATION PLACEHOLDER FOR AI TUTOR SCREEN]
- * To connect live Gemini API:
- * 1. Store your GEMINI_API_KEY in the AI Studio Secrets Panel or .env file.
- * 2. Access BuildConfig.GEMINI_API_KEY in RetrofitClient.kt.
- * 3. Invoke RetrofitClient.geminiService.generateContent("gemini-3.5-flash", apiKey, request).
- */
-
 @Composable
 fun AiChatScreen(
     viewModel: StudyViewModel,

@@ -14,8 +14,12 @@ import kotlinx.coroutines.tasks.await
 
 class FirebaseAuthRepository {
 
-    private val auth: FirebaseAuth? by lazy {
-        try {
+    private fun getAuthInstance(): FirebaseAuth? {
+        return try {
+            val app = com.example.StudyMateApplication.instance
+            if (app != null && com.google.firebase.FirebaseApp.getApps(app).isEmpty()) {
+                app.initFirebase()
+            }
             FirebaseAuth.getInstance()
         } catch (e: Exception) {
             Log.e("FirebaseAuthRepo", "FirebaseAuth initialization warning: ${e.message}")
@@ -23,14 +27,22 @@ class FirebaseAuthRepository {
         }
     }
 
-    private val firestore: FirebaseFirestore? by lazy {
-        try {
+    private fun getFirestoreInstance(): FirebaseFirestore? {
+        return try {
+            val app = com.example.StudyMateApplication.instance
+            if (app != null && com.google.firebase.FirebaseApp.getApps(app).isEmpty()) {
+                app.initFirebase()
+            }
             FirebaseFirestore.getInstance()
         } catch (e: Exception) {
             Log.e("FirebaseAuthRepo", "FirebaseFirestore initialization warning: ${e.message}")
             null
         }
     }
+
+    private val auth: FirebaseAuth? get() = getAuthInstance()
+
+    private val firestore: FirebaseFirestore? get() = getFirestoreInstance()
 
     val currentUser: FirebaseUser?
         get() = auth?.currentUser
