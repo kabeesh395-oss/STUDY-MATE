@@ -165,6 +165,21 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun loginAsGuest(onSuccess: () -> Unit = {}) {
+        _isLoading.value = false
+        _errorMessage.value = null
+        val guestUser = AuthUserModel(
+            uid = "guest_${System.currentTimeMillis()}",
+            name = "Guest Student",
+            email = "guest@studymate.ai",
+            photoUrl = null,
+            isGoogleUser = false
+        )
+        _currentUser.value = guestUser
+        _isAuthenticated.value = true
+        onSuccess()
+    }
+
     fun signOut() {
         viewModelScope.launch {
             authRepository.signOut()
@@ -185,13 +200,13 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         val msg = e.message ?: ""
         return when {
             msg.contains("Firebase Auth is unavailable", ignoreCase = true) ->
-                "Firebase Auth is initializing or currently unreachable. Please check your internet connection or try again in a moment."
+                "Firebase Auth service is currently unreachable. You can continue in Guest Mode or retry."
             msg.contains("The email address is badly formatted", ignoreCase = true) -> "Invalid email address format."
             msg.contains("The password is invalid", ignoreCase = true) || msg.contains("invalid-credential", ignoreCase = true) -> "Incorrect email or password."
             msg.contains("The email address is already in use", ignoreCase = true) -> "An account already exists with this email address."
             msg.contains("user-not-found", ignoreCase = true) -> "No account found with this email."
-            msg.contains("network", ignoreCase = true) || msg.contains("UNAVAILABLE", ignoreCase = true) -> "Network error. Please check your internet connection."
-            else -> msg.ifBlank { "Authentication failed. Please check your internet connection and credentials." }
+            msg.contains("network", ignoreCase = true) || msg.contains("UNAVAILABLE", ignoreCase = true) -> "Network error. Please check your connection or use Guest Mode."
+            else -> msg.ifBlank { "Authentication failed. Please check your credentials or continue in Guest Mode." }
         }
     }
 }

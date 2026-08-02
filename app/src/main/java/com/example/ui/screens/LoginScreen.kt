@@ -378,6 +378,34 @@ fun LoginScreen(
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Continue as Guest Button
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(SurfaceDark)
+                            .border(1.dp, GlassBorder, RoundedCornerShape(16.dp))
+                            .clickable {
+                                authViewModel.loginAsGuest {
+                                    studyViewModel.navigateTo("HOME")
+                                }
+                            }
+                            .padding(horizontal = 16.dp)
+                            .testTag("guest_sign_in_btn"),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Continue as Guest (Offline Mode)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = SecondaryText,
+                            fontSize = 13.sp
+                        )
+                    }
                 }
             }
 

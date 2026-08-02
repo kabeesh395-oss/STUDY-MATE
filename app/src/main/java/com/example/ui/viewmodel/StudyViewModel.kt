@@ -206,6 +206,42 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    // Archive Subject
+    fun archiveSubject(subjectId: String) {
+        viewModelScope.launch {
+            val sub = subjects.value.find { it.id == subjectId }
+            if (sub != null) {
+                val updated = sub.copy(isArchived = true)
+                repository.updateSubject(updated)
+                if (_selectedSubject.value?.id == subjectId) {
+                    _selectedSubject.value = updated
+                }
+            }
+        }
+    }
+
+    // Restore Subject
+    fun restoreSubject(subjectId: String) {
+        viewModelScope.launch {
+            val sub = subjects.value.find { it.id == subjectId }
+            if (sub != null) {
+                val updated = sub.copy(isArchived = false)
+                repository.updateSubject(updated)
+                if (_selectedSubject.value?.id == subjectId) {
+                    _selectedSubject.value = updated
+                }
+            }
+        }
+    }
+
+    // Reset All User Data
+    fun resetAllUserData() {
+        viewModelScope.launch {
+            repository.clearAllUserData()
+            repository.seedInitialDataIfEmpty(getApplication())
+        }
+    }
+
     // Create New Subject
     fun createSubject(name: String, code: String, semester: String, iconCategory: String) {
         val trimmedName = name.trim()

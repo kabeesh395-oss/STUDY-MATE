@@ -161,4 +161,29 @@ interface AppDao {
 
     @Update
     suspend fun updateQuestionPaper(paper: QuestionPaperEntity)
+
+    // Clear Methods for Account Isolation & Reset
+    @Query("DELETE FROM subjects")
+    suspend fun clearAllSubjects()
+
+    @Query("DELETE FROM units")
+    suspend fun clearAllUnits()
+
+    @Query("DELETE FROM study_notes")
+    suspend fun clearAllNotes()
+
+    @Query("DELETE FROM uploaded_files")
+    suspend fun clearAllUploadedFiles()
+
+    @Query("DELETE FROM flashcards")
+    suspend fun clearAllFlashcards()
+
+    @Query("DELETE FROM quiz_questions")
+    suspend fun clearAllQuizQuestions()
+
+    @Query("DELETE FROM question_papers")
+    suspend fun clearAllQuestionPapers()
+
+    @Query("DELETE FROM user_profile")
+    suspend fun clearUserProfile()
 }

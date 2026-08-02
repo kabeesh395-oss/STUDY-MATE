@@ -476,325 +476,42 @@ class StudyRepository(val appDao: AppDao) {
         }
     }
 
-    // Prepopulate default engineering subjects if empty (only on very first installation)
+    // Clear all user data from local database for fresh account creation & logout
+    suspend fun clearAllUserData() {
+        appDao.clearAllSubjects()
+        appDao.clearAllUnits()
+        appDao.clearAllNotes()
+        appDao.clearAllUploadedFiles()
+        appDao.clearAllFlashcards()
+        appDao.clearAllQuizQuestions()
+        appDao.clearAllQuestionPapers()
+        appDao.clearChatHistory()
+        appDao.clearUserProfile()
+    }
+
+    // Initialize user profile for brand new installation/account without any fake data
     suspend fun seedInitialDataIfEmpty(context: Context) {
         val prefs = context.getSharedPreferences("studymate_app_prefs", Context.MODE_PRIVATE)
-        val hasSeeded = prefs.getBoolean("has_seeded_initial_data_v1", false)
+        val hasSeeded = prefs.getBoolean("has_seeded_initial_data_v2", false)
         if (hasSeeded) {
             return
         }
 
-        val existing = allSubjects.firstOrNull()
-        if (existing.isNullOrEmpty()) {
-            val subjects = listOf(
-                SubjectEntity("ai", "Artificial Intelligence", "CS8691", "Semester 6", 75, true, "AI", 1),
-                SubjectEntity("se", "Software Engineering", "CS8491", "Semester 4", 60, true, "TECH", 2),
-                SubjectEntity("python", "Python Programming", "GE8151", "Semester 1", 90, true, "CODE", 3),
-                SubjectEntity("ds", "Data Structures", "CS8351", "Semester 3", 82, true, "DATA", 4),
-                SubjectEntity("java", "Java OOPs", "CS8392", "Semester 3", 68, false, "CODE", 5),
-                SubjectEntity("dbms", "Database Systems", "CS8492", "Semester 4", 70, false, "DATA", 6),
-                SubjectEntity("os", "Operating Systems", "CS8493", "Semester 4", 55, false, "TECH", 7),
-                SubjectEntity("aptitude", "Aptitude & Reasoning", "GE8261", "Semester 5", 88, false, "MATH", 8)
+        val existingProfile = userProfile.firstOrNull()
+        if (existingProfile == null) {
+            val profile = UserProfileEntity(
+                name = "Student",
+                college = "Engineering College",
+                department = "Computer Science & Engineering",
+                semester = "Semester 5",
+                semesterProgressPercent = 0,
+                streakDays = 0,
+                xpPoints = 0,
+                coins = 0
             )
-            appDao.insertSubjects(subjects)
-
-            val aiUnits = listOf(
-                UnitEntity("ai_u1", "ai", 1, "Introduction to Search & Problem Solving", 90),
-                UnitEntity("ai_u2", "ai", 2, "Probabilistic Reasoning & Knowledge", 80),
-                UnitEntity("ai_u3", "ai", 3, "Machine Learning Algorithms & Neural Networks", 60),
-                UnitEntity("ai_u4", "ai", 4, "Natural Language Processing & Computer Vision", 50),
-                UnitEntity("ai_u5", "ai", 5, "Robotics & Ethics in AI", 40)
-            )
-            appDao.insertUnits(aiUnits)
-
-            val seUnits = listOf(
-                UnitEntity("se_u1", "se", 1, "Software Process Models & Agile Methods", 85),
-                UnitEntity("se_u2", "se", 2, "Requirements Engineering & Analysis", 70),
-                UnitEntity("se_u3", "se", 3, "Software Architecture & Design Patterns", 65),
-                UnitEntity("se_u4", "se", 4, "Testing, Verification & Validation", 45),
-                UnitEntity("se_u5", "se", 5, "Project Management & DevOps", 35)
-            )
-            appDao.insertUnits(seUnits)
-
-            val sampleNote = StudyNoteEntity(
-                id = "note_1",
-                subjectId = "ai",
-                unitId = "ai_u1",
-                title = "A* Search & Heuristic Functions",
-                rawText = "A* Search is an informed search algorithm that uses both path cost g(n) and estimated cost to goal h(n). Function f(n) = g(n) + h(n).",
-                summary50Words = "A* search evaluates nodes by combining path cost g(n) and heuristic estimate h(n). f(n) = g(n) + h(n). It guarantees optimality when h(n) is admissible (never overestimates remaining cost) and consistent.",
-                detailedExplanation = "A* is widely regarded as one of the most effective search techniques in Artificial Intelligence for pathfinding and graph traversal. By balancing backward path cost g(n) with forward heuristic prediction h(n), it avoids exploring suboptimal branches.",
-                definitionsJson = "[\"Admissible Heuristic: A heuristic function that never overestimates the true cost to reach the goal.\", \"Consistency: A heuristic is consistent if for every node n and successor n', h(n) <= c(n, n') + h(n').\"]",
-                formulasJson = "[\"f(n) = g(n) + h(n)\", \"h(n) <= h*(n) (Admissibility Condition)\"]",
-                mindMapNodesJson = "[\"A* Search Algorithm\", \"Cost Function g(n)\", \"Heuristic h(n)\", \"Admissibility\", \"Open Set / Closed Set\"]",
-                examTips = "Always draw the search tree step by step and calculate f(n) for each fringe node in university 13-mark questions.",
-                commonMistakes = "Confusing admissible heuristics with consistent heuristics or forgetting to update g(n) when finding a shorter path.",
-                difficulty = "Medium",
-                estimatedMinutes = 20,
-                confidenceScore = 92
-            )
-            appDao.insertNote(sampleNote)
-
-            val flashcards = listOf(
-                FlashcardEntity("fc1", "ai", "ai_u1", "What is an Admissible Heuristic?", "A heuristic that never overestimates the actual cost from the current state to the goal.", true, "MASTERED"),
-                FlashcardEntity("fc2", "ai", "ai_u1", "State the formula for A* search.", "f(n) = g(n) + h(n), where g(n) is path cost from start and h(n) is heuristic estimate to goal.", false, "NEW"),
-                FlashcardEntity("fc3", "ai", "ai_u1", "Difference between BFS and DFS?", "BFS uses a Queue (FIFO) and is complete/optimal for unit edge costs. DFS uses a Stack (LIFO) and has space complexity O(bm).", true, "NEEDS_REVIEW"),
-                FlashcardEntity("fc4", "se", "se_u1", "What is Agile Methodology?", "An iterative approach to project management and software development that delivers value faster with higher flexibility.", false, "MASTERED")
-            )
-            appDao.insertFlashcards(flashcards)
-
-            val quizQuestions = listOf(
-                QuizQuestionEntity("qq1", "ai", "ai_u1", "A* search algorithm is optimal if heuristic h(n) is:", "MCQ", "[\"Admissible\", \"Overestimating\", \"Negative\", \"Random\"]", "Admissible", "An admissible heuristic never overestimates the actual cost to reach the goal, guaranteeing optimality."),
-                QuizQuestionEntity("qq2", "ai", "ai_u1", "Is Depth-First Search guaranteed to find the shortest path in unweighted graphs?", "TRUE_FALSE", "[\"True\", \"False\"]", "False", "BFS guarantees shortest path in unweighted graphs, while DFS can explore deep unpromising branches first."),
-                QuizQuestionEntity("qq3", "ai", "ai_u1", "In f(n) = g(n) + h(n), g(n) represents the cost from the _____ node to node n.", "FILL_BLANKS", "[\"Start\", \"Goal\", \"Fringe\", \"Parent\"]", "Start", "g(n) is the exact cost incurred from the start node to the current node n.")
-            )
-            appDao.insertQuizQuestions(quizQuestions)
-
-            val profile = UserProfileEntity()
             appDao.insertOrUpdateProfile(profile)
-
-            val welcomeMessage = ChatMessageEntity(
-                sender = "AI",
-                message = "👋 Hello Kabeesh! I'm your StudyMate AI Tutor. I can summarize notes, generate university exam questions, create quizzes, flip flashcards, and explain complex concepts in English, Tamil, or Tanglish!\n\nHow can I help you excel in your semester exams today?",
-                suggestedPillsJson = "[\"Summarize AI Unit 3\", \"Explain A* Search for Viva\", \"Generate 13-Mark Exam Questions\", \"Code Binary Search in Python\"]"
-            )
-            appDao.insertChatMessage(welcomeMessage)
-
-            val samplePapers = listOf(
-                QuestionPaperEntity(
-                    id = "qp_1",
-                    fileName = "CS8691_AI_IA1_2024.pdf",
-                    subject = "Artificial Intelligence",
-                    examType = "IA 1",
-                    academicYear = "2024-2025",
-                    department = "Computer Science & Engineering",
-                    semester = "Semester 6",
-                    fileType = "PDF",
-                    fileSizeFormatted = "1.8 MB",
-                    isBookmarked = true,
-                    isDownloaded = true,
-                    extractedQuestionsJson = """[
-                        "1. Define Admissible Heuristic and state its mathematical condition.",
-                        "2. What is problem formulation in Artificial Intelligence?",
-                        "3. Explain A* Search Algorithm with a neat diagram and path cost equation.",
-                        "4. Differentiate between Uninformed and Informed search strategies with examples.",
-                        "5. Solve the 8-Puzzle Problem using A* Search and derive the total nodes expanded."
-                    ]""",
-                    repeatedQuestionsJson = """[
-                        "Define Admissible Heuristic (Appeared in IA-1 2023, IA-1 2024, Semester 2023)",
-                        "A* Search Algorithm Execution (Appeared 4 times in Anna Univ papers)"
-                    ]""",
-                    markCategoriesJson = """{
-                        "2": ["1. Define Admissible Heuristic and state its mathematical condition.", "2. What is problem formulation in Artificial Intelligence?"],
-                        "5": ["4. Differentiate between Uninformed and Informed search strategies with examples."],
-                        "10": [],
-                        "13": ["3. Explain A* Search Algorithm with a neat diagram and path cost equation."],
-                        "16": ["5. Solve the 8-Puzzle Problem using A* Search and derive the total nodes expanded."]
-                    }""",
-                    importantQuestionsJson = """[
-                        "A* Search admissibility and proof of optimality",
-                        "Alpha-Beta Pruning game tree calculation",
-                        "Constraint Satisfaction Problem (CSP) Map Coloring"
-                    ]""",
-                    generatedAnswersJson = """{
-                        "1. Define Admissible Heuristic and state its mathematical condition.": "An admissible heuristic h(n) never overestimates the cost to reach the goal. Condition: 0 <= h(n) <= h*(n).",
-                        "3. Explain A* Search Algorithm with a neat diagram and path cost equation.": "A* search evaluates nodes using f(n) = g(n) + h(n), where g(n) is path cost from start and h(n) is heuristic estimate to goal. It guarantees optimal shortest path when h(n) is admissible and consistent."
-                    }"""
-                ),
-                QuestionPaperEntity(
-                    id = "qp_2",
-                    fileName = "CS8491_SE_IA2_2024.pdf",
-                    subject = "Software Engineering",
-                    examType = "IA 2",
-                    academicYear = "2024-2025",
-                    department = "Computer Science & Engineering",
-                    semester = "Semester 4",
-                    fileType = "PDF",
-                    fileSizeFormatted = "2.1 MB",
-                    isBookmarked = false,
-                    isDownloaded = true,
-                    extractedQuestionsJson = """[
-                        "1. What is Functional and Non-Functional Requirement?",
-                        "2. Define Cohesion and Coupling in software architecture.",
-                        "3. Illustrate the Agile Scrum framework lifecycle with sprint events.",
-                        "4. Compare Waterfall vs Spiral Process Models."
-                    ]""",
-                    repeatedQuestionsJson = """[
-                        "Cohesion vs Coupling (Appeared 5 times in Univ papers)",
-                        "Agile Scrum Framework Lifecycle (Appeared in IA-2 2023, 2024)"
-                    ]""",
-                    markCategoriesJson = """{
-                        "2": ["1. What is Functional and Non-Functional Requirement?", "2. Define Cohesion and Coupling in software architecture."],
-                        "5": ["4. Compare Waterfall vs Spiral Process Models."],
-                        "10": [],
-                        "13": ["3. Illustrate the Agile Scrum framework lifecycle with sprint events."],
-                        "16": []
-                    }""",
-                    importantQuestionsJson = """[
-                        "Agile Scrum lifecycle & Sprint ceremonies",
-                        "Cohesion & Coupling types with metrics",
-                        "Use Case & Sequence Diagrams for E-Commerce"
-                    ]""",
-                    generatedAnswersJson = """{
-                        "2. Define Cohesion and Coupling in software architecture.": "Cohesion measures internal strength within a module (aim for High Cohesion). Coupling measures interdependence between modules (aim for Low Coupling)."
-                    }"""
-                ),
-                QuestionPaperEntity(
-                    id = "qp_3",
-                    fileName = "CS8351_DS_IA3_2024.docx",
-                    subject = "Data Structures",
-                    examType = "IA 3",
-                    academicYear = "2024-2025",
-                    department = "Computer Science & Engineering",
-                    semester = "Semester 3",
-                    fileType = "DOCX",
-                    fileSizeFormatted = "1.1 MB",
-                    isBookmarked = true,
-                    isDownloaded = true,
-                    extractedQuestionsJson = """[
-                        "1. Define Balance Factor in AVL Trees.",
-                        "2. What is Collision Resolution in Hashing?",
-                        "3. Construct an AVL Tree by inserting keys: 10, 20, 30, 40, 50, 25.",
-                        "4. Explain Dijkstra's Shortest Path Algorithm on a weighted directed graph."
-                    ]""",
-                    repeatedQuestionsJson = """[
-                        "AVL Tree Rotations (Appeared 6 times in Univ papers)",
-                        "Dijkstra Shortest Path Algorithm (Appeared in IA-3 2022, 2023, 2024)"
-                    ]""",
-                    markCategoriesJson = """{
-                        "2": ["1. Define Balance Factor in AVL Trees.", "2. What is Collision Resolution in Hashing?"],
-                        "5": [],
-                        "10": [],
-                        "13": ["3. Construct an AVL Tree by inserting keys: 10, 20, 30, 40, 50, 25."],
-                        "16": ["4. Explain Dijkstra's Shortest Path Algorithm on a weighted directed graph."]
-                    }""",
-                    importantQuestionsJson = """[
-                        "AVL Tree LL/RR/LR/RL Rotations",
-                        "Dijkstra & Prim's Minimum Spanning Tree",
-                        "Quadratic Probing & Double Hashing"
-                    ]""",
-                    generatedAnswersJson = """{
-                        "1. Define Balance Factor in AVL Trees.": "Balance Factor = Height(Left Subtree) - Height(Right Subtree). For an AVL tree, BF must be -1, 0, or +1."
-                    }"""
-                ),
-                QuestionPaperEntity(
-                    id = "qp_4",
-                    fileName = "CS8691_AI_Model_Exam_2025.pdf",
-                    subject = "Artificial Intelligence",
-                    examType = "Model Exam",
-                    academicYear = "2024-2025",
-                    department = "Computer Science & Engineering",
-                    semester = "Semester 6",
-                    fileType = "PDF",
-                    fileSizeFormatted = "2.4 MB",
-                    isBookmarked = false,
-                    isDownloaded = true,
-                    extractedQuestionsJson = """[
-                        "1. What is First Order Predicate Logic (FOL)?",
-                        "2. Define Bayes Rule for Probabilistic Reasoning.",
-                        "3. Convert sentences into First Order Logic and apply Resolution Refutation.",
-                        "4. Explain Convolutional Neural Networks (CNN) architecture for Image Classification."
-                    ]""",
-                    repeatedQuestionsJson = """[
-                        "FOL Resolution Refutation (Appeared 4 times)",
-                        "Bayes Rule & Bayesian Networks (Appeared 3 times)"
-                    ]""",
-                    markCategoriesJson = """{
-                        "2": ["1. What is First Order Predicate Logic (FOL)?", "2. Define Bayes Rule for Probabilistic Reasoning."],
-                        "5": [],
-                        "10": [],
-                        "13": ["3. Convert sentences into First Order Logic and apply Resolution Refutation."],
-                        "16": ["4. Explain Convolutional Neural Networks (CNN) architecture for Image Classification."]
-                    }""",
-                    importantQuestionsJson = """[
-                        "FOL Resolution Refutation step-by-step",
-                        "CNN Convolution & Pooling layers",
-                        "Markov Decision Process (MDP) Bellman Equation"
-                    ]""",
-                    generatedAnswersJson = """{
-                        "2. Define Bayes Rule for Probabilistic Reasoning.": "P(A|B) = [P(B|A) * P(A)] / P(B). Calculates posterior probability of cause A given evidence B."
-                    }"""
-                ),
-                QuestionPaperEntity(
-                    id = "qp_5",
-                    fileName = "CS8492_DBMS_NovDec2024_Semester.pdf",
-                    subject = "Database Systems",
-                    examType = "Semester Exam",
-                    academicYear = "2024-2025",
-                    department = "Computer Science & Engineering",
-                    semester = "Semester 4",
-                    fileType = "PDF",
-                    fileSizeFormatted = "3.2 MB",
-                    isBookmarked = true,
-                    isDownloaded = true,
-                    extractedQuestionsJson = """[
-                        "1. What is ACID Property in DBMS transactions?",
-                        "2. Differentiate 3NF and BCNF with functional dependencies.",
-                        "3. Explain Two-Phase Locking (2PL) protocol for Concurrency Control.",
-                        "4. Construct B+ Tree Index for sequence of keys."
-                    ]""",
-                    repeatedQuestionsJson = """[
-                        "ACID Properties (Appeared 8 times in Univ papers)",
-                        "3NF vs BCNF Normalization (Appeared 6 times)"
-                    ]""",
-                    markCategoriesJson = """{
-                        "2": ["1. What is ACID Property in DBMS transactions?"],
-                        "5": ["2. Differentiate 3NF and BCNF with functional dependencies."],
-                        "10": [],
-                        "13": ["3. Explain Two-Phase Locking (2PL) protocol for Concurrency Control."],
-                        "16": ["4. Construct B+ Tree Index for sequence of keys."]
-                    }""",
-                    importantQuestionsJson = """[
-                        "2PL & Deadlock handling in DBMS",
-                        "3NF vs BCNF decomposition rules",
-                        "B+ Tree Insertion and Deletion algorithms"
-                    ]""",
-                    generatedAnswersJson = """{
-                        "1. What is ACID Property in DBMS transactions?": "Atomicity (All or nothing), Consistency (Preserves invariants), Isolation (Concurrent execution protection), Durability (Persisted on disk)."
-                    }"""
-                ),
-                QuestionPaperEntity(
-                    id = "qp_6",
-                    fileName = "AnnaUniv_CS8691_AI_AprMay2023.jpg",
-                    subject = "Artificial Intelligence",
-                    examType = "University Previous Year Papers",
-                    academicYear = "2022-2023",
-                    department = "Computer Science & Engineering",
-                    semester = "Semester 6",
-                    fileType = "IMAGE",
-                    fileSizeFormatted = "4.5 MB",
-                    isBookmarked = true,
-                    isDownloaded = true,
-                    extractedQuestionsJson = """[
-                        "1. Define Turing Test in AI.",
-                        "2. State the difference between BFS and Depth First Search.",
-                        "3. Explain Natural Language Processing (NLP) pipeline stages.",
-                        "4. Detail Robot Kinematics and Sensor Integration."
-                    ]""",
-                    repeatedQuestionsJson = """[
-                        "Turing Test Definition (Appeared 5 times in Univ papers)",
-                        "NLP Pipeline Stages (Appeared in 2022, 2023, 2024)"
-                    ]""",
-                    markCategoriesJson = """{
-                        "2": ["1. Define Turing Test in AI.", "2. State the difference between BFS and Depth First Search."],
-                        "5": [],
-                        "10": [],
-                        "13": ["3. Explain Natural Language Processing (NLP) pipeline stages."],
-                        "16": ["4. Detail Robot Kinematics and Sensor Integration."]
-                    }""",
-                    importantQuestionsJson = """[
-                        "NLP Pipeline Tokenization, Parsing, Sentiment",
-                        "Robot Kinematics Forward & Inverse",
-                        "A* Search vs Greedy Best-First Search"
-                    ]""",
-                    generatedAnswersJson = """{
-                        "1. Define Turing Test in AI.": "Proposed by Alan Turing in 1950 to evaluate if a machine can exhibit human-equivalent intelligent behavior through natural language dialogue."
-                    }"""
-                )
-            )
-            appDao.insertQuestionPapers(samplePapers)
         }
 
-        prefs.edit().putBoolean("has_seeded_initial_data_v1", true).apply()
+        prefs.edit().putBoolean("has_seeded_initial_data_v2", true).apply()
     }
 }

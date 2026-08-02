@@ -11,6 +11,7 @@ data class SubjectEntity(
     val semester: String,
     val completionPercentage: Int = 0,
     val isFavorite: Boolean = false,
+    val isArchived: Boolean = false,
     val iconCategory: String = "TECH",
     val displayOrder: Int = 0
 )
@@ -103,14 +104,14 @@ data class ChatMessageEntity(
 @Entity(tableName = "user_profile")
 data class UserProfileEntity(
     @PrimaryKey val id: Int = 1,
-    val name: String = "Kabeesh",
-    val college: String = "National Institute of Technology",
+    val name: String = "Student",
+    val college: String = "Engineering College",
     val department: String = "Computer Science & Engineering",
     val semester: String = "Semester 5",
-    val semesterProgressPercent: Int = 72,
-    val streakDays: Int = 12,
-    val xpPoints: Int = 1450,
-    val coins: Int = 320,
+    val semesterProgressPercent: Int = 0,
+    val streakDays: Int = 0,
+    val xpPoints: Int = 0,
+    val coins: Int = 0,
     val accentColorHex: String = "#3B82F6",
     val selectedLanguage: String = "English",
     val selectedAiModel: String = "gemini-3.5-flash"
