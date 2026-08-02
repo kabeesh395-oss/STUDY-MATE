@@ -53,6 +53,7 @@ import com.example.ui.theme.SecondaryText
 import com.example.ui.theme.SurfaceDark
 import com.example.ui.viewmodel.StudyViewModel
 
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.ui.platform.LocalContext
 import com.example.utils.StudyNotificationManager
@@ -65,6 +66,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     val notificationManager = remember { StudyNotificationManager.getInstance(context) }
     val profile = viewModel.userProfile.collectAsState().value
+    val currentThemeMode by viewModel.themeMode.collectAsState()
 
     var selectedAccent by remember(profile) { mutableStateOf(profile?.accentColorHex ?: "#3B82F6") }
     var selectedLanguage by remember(profile) { mutableStateOf(profile?.selectedLanguage ?: "English") }
@@ -168,6 +170,102 @@ fun SettingsScreen(
                             fontWeight = FontWeight.Bold,
                             color = SecondaryText
                         )
+                    }
+                }
+            }
+
+            // Display Theme & Eye Care Switcher
+            item {
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.DarkMode,
+                                contentDescription = "Theme",
+                                tint = ElectricBlue
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Display Theme & Eye Care",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        Text(
+                            text = "Toggle theme mode to reduce eye strain during late-night study sessions or switch to daylight mode.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 12.sp
+                        )
+
+                        Spacer(modifier = Modifier.height(14.dp))
+
+                        val themeOptions = listOf(
+                            Triple("DARK", "🌙 Dark Mode (OLED)", "Deep black canvas for late-night study & eye care"),
+                            Triple("LIGHT", "☀️ Light Mode (Daylight)", "High contrast light mode for daytime study"),
+                            Triple("SYSTEM", "📱 System Default", "Follows device system settings automatically")
+                        )
+
+                        themeOptions.forEach { (mode, title, desc) ->
+                            val isSelected = currentThemeMode == mode
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(
+                                        if (isSelected) ElectricBlue.copy(alpha = 0.18f)
+                                        else MaterialTheme.colorScheme.surface
+                                    )
+                                    .border(
+                                        1.dp,
+                                        if (isSelected) ElectricBlue else MaterialTheme.colorScheme.outline,
+                                        RoundedCornerShape(12.dp)
+                                    )
+                                    .clickable { viewModel.setThemeMode(mode) }
+                                    .padding(14.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = title,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Spacer(modifier = Modifier.height(2.dp))
+                                        Text(
+                                            text = desc,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+
+                                    if (isSelected) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(22.dp)
+                                                .clip(CircleShape)
+                                                .background(ElectricBlue),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text("✓", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

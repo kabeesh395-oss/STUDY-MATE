@@ -125,6 +125,18 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
+    // Theme Switcher State: "DARK" (OLED Night), "LIGHT" (Daylight), "SYSTEM" (System default)
+    private val _themeMode = MutableStateFlow("DARK")
+    val themeMode: StateFlow<String> = _themeMode.asStateFlow()
+
+    fun setThemeMode(mode: String) {
+        _themeMode.value = mode
+    }
+
+    fun toggleThemeMode() {
+        _themeMode.value = if (_themeMode.value == "LIGHT") "DARK" else "LIGHT"
+    }
+
     init {
         viewModelScope.launch {
             try {

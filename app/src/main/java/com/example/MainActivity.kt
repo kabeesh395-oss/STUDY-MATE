@@ -77,13 +77,16 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            StudyMateTheme {
+            val themeMode by viewModel.themeMode.collectAsState()
+
+            StudyMateTheme(themeMode = themeMode) {
                 val currentScreen by viewModel.currentScreen.collectAsState()
+                val bg = androidx.compose.material3.MaterialTheme.colorScheme.background
 
                 Scaffold(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(BgDark),
+                        .background(bg),
                     bottomBar = {
                         // Show bottom nav on main navigation screens
                         if (currentScreen in listOf("HOME", "QUESTION_BANK", "CAREER_HUB", "AI_CHAT", "EXAM_MODE", "QUIZ", "FLASHCARDS", "PROFILE")) {
@@ -98,7 +101,7 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(innerPadding)
-                            .background(BgDark)
+                            .background(bg)
                     ) {
                         AnimatedContent(
                             targetState = currentScreen,

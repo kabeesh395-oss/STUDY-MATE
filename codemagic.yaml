@@ -14,14 +14,9 @@ workflows:
           if ! ./gradlew --version >/dev/null 2>&1; then
             echo "Repairing corrupted gradle-wrapper.jar..."
             rm -f gradle/wrapper/gradle-wrapper.jar
-            if command -v gradle >/dev/null 2>&1; then
-              gradle wrapper --gradle-version 9.3.1
-            else
-              curl -sSL https://services.gradle.org/distributions/gradle-9.3.1-bin.zip -o /tmp/gradle.zip
-              unzip -q /tmp/gradle.zip -d /tmp/gradle-dist
-              /tmp/gradle-dist/gradle-9.3.1/bin/gradle wrapper --gradle-version 9.3.1
-              rm -rf /tmp/gradle.zip /tmp/gradle-dist
-            fi
+            GRADLE_VERSION=$(grep 'distributionUrl' gradle/wrapper/gradle-wrapper.properties | sed -n 's/.*gradle-\([0-9.]*\)-.*/\1/p')
+            if [ -z "$GRADLE_VERSION" ]; then GRADLE_VERSION="9.3.1"; fi
+            curl -sSL -f "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
           fi
       - name: Build Android Debug APK
         script: |

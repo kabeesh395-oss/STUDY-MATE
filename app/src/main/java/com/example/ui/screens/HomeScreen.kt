@@ -120,6 +120,7 @@ fun HomeScreen(
     var showCreateDialog by remember { mutableStateOf(false) }
     var showDailyWelcomeDialog by remember { mutableStateOf(false) }
     val subjectsList by viewModel.subjects.collectAsState()
+    val themeMode by viewModel.themeMode.collectAsState()
 
     val fabTransition = rememberInfiniteTransition(label = "fabPulse")
     val fabScale by fabTransition.animateFloat(
@@ -188,6 +189,23 @@ fun HomeScreen(
                         }
 
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Quick Theme Switcher Button (Sun/Moon)
+                            IconButton(
+                                onClick = { viewModel.toggleThemeMode() },
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surface)
+                                    .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                                    .testTag("theme_toggle_btn")
+                            ) {
+                                Text(
+                                    text = if (themeMode == "LIGHT") "☀️" else "🌙",
+                                    fontSize = 16.sp
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
                             IconButton(
                                 onClick = { viewModel.navigateTo("SEARCH") },
                                 modifier = Modifier

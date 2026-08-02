@@ -25,6 +25,17 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
+    - name: Validate & repair Gradle Wrapper
+      run: |
+        if ! ./gradlew --version >/dev/null 2>&1; then
+          echo "gradle-wrapper.jar is invalid or corrupted. Repairing wrapper..."
+          rm -f gradle/wrapper/gradle-wrapper.jar
+          GRADLE_VERSION=$(grep 'distributionUrl' gradle/wrapper/gradle-wrapper.properties | sed -n 's/.*gradle-\([0-9.]*\)-.*/\1/p')
+          if [ -z "$GRADLE_VERSION" ]; then GRADLE_VERSION="9.3.1"; fi
+          echo "Downloading gradle-wrapper.jar for Gradle $GRADLE_VERSION..."
+          curl -sSL -f "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
+        fi
+
     - name: Build Debug APK with Gradle
       run: ./gradlew assembleDebug --stacktrace
 

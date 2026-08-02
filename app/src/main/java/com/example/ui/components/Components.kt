@@ -93,8 +93,8 @@ import com.example.ui.theme.SurfaceDark
 fun GlassCard(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 20.dp,
-    borderColor: Color = GlassBorder,
-    backgroundColor: Color = CardDark,
+    borderColor: Color = MaterialTheme.colorScheme.outline,
+    backgroundColor: Color = MaterialTheme.colorScheme.surfaceVariant,
     onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
