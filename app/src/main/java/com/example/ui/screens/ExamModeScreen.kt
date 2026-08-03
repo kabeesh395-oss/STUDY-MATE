@@ -61,43 +61,50 @@ import com.example.ui.theme.StatusSuccess
 import com.example.ui.theme.SurfaceDark
 import com.example.ui.viewmodel.StudyViewModel
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.text.style.TextAlign
+
 @Composable
 fun ExamModeScreen(
     viewModel: StudyViewModel,
     modifier: Modifier = Modifier
 ) {
     var selectedMarkCategory by remember { mutableStateOf("13 Marks") }
+    val allNotes by viewModel.notes.collectAsState()
 
-    val questions = listOf(
-        ExamQuestionItem(
-            category = "13 Marks",
-            title = "Q1. Explain A* Search Algorithm with a neat diagram and state space graph. Prove its admissibility.",
-            repeatCount = 8,
-            modelAnswer = "1. Introduction: A* is an informed search algorithm combining path cost g(n) and heuristic estimate h(n).\n2. Block Diagram: Draw Search Tree with Open & Closed sets.\n3. Formula: f(n) = g(n) + h(n).\n4. Admissibility Proof: h(n) <= h*(n) guarantees optimal path.",
-            evaluationTip = "Award 3 marks for labeled tree diagram, 4 marks for f(n) derivation step, 3 marks for admissibility condition, 3 marks for example calculation."
-        ),
-        ExamQuestionItem(
-            category = "13 Marks",
-            title = "Q2. Derive the backpropagation weight update equations for a 2-layer Feedforward Neural Network.",
-            repeatCount = 6,
-            modelAnswer = "1. Loss function: E = 1/2 sum (y - t)^2.\n2. Chain Rule: dE/dw = (dE/da) * (da/dz) * (dz/dw).\n3. Gradient Descent Step: w_new = w_old - alpha * dE/dw.",
-            evaluationTip = "Draw loss surface and clean chain rule equations for maximum university score."
-        ),
-        ExamQuestionItem(
-            category = "2 Marks",
-            title = "Q1. What is an admissible heuristic? State its mathematical condition.",
-            repeatCount = 12,
-            modelAnswer = "An admissible heuristic never overestimates the actual cost to reach the goal state. Condition: h(n) <= h*(n) for all nodes n.",
-            evaluationTip = "Always write the mathematical inequality along with the 1-sentence definition."
-        ),
-        ExamQuestionItem(
-            category = "16 Marks",
-            title = "Q1. Comprehensive Case Study: Design an Agile DevOps CI/CD Pipeline for a Microservices Architecture.",
-            repeatCount = 4,
-            modelAnswer = "1. Architecture Overview.\n2. Containerization with Docker & Kubernetes.\n3. Automated Testing Stages.\n4. Blue-Green Deployment Strategy.",
-            evaluationTip = "Include stage-wise architectural flowcharts for full 16-mark allocation."
-        )
-    ).filter { it.category == selectedMarkCategory }
+    val questions = remember(allNotes, selectedMarkCategory) {
+        val derived = mutableListOf<ExamQuestionItem>()
+        allNotes.forEachIndexed { idx, note ->
+            derived.add(
+                ExamQuestionItem(
+                    category = "2 Marks",
+                    title = "Q${idx + 1}. Define the fundamental concepts of ${note.title}.",
+                    repeatCount = 5 + idx,
+                    modelAnswer = note.summary50Words.ifBlank { "Core definitions and fundamental parameters for ${note.title}." },
+                    evaluationTip = "Write a clear 2-sentence definition highlighting boundary conditions and formulas."
+                )
+            )
+            derived.add(
+                ExamQuestionItem(
+                    category = "13 Marks",
+                    title = "Q${idx + 1}. Derive the complete architectural breakdown and working principle of ${note.title}.",
+                    repeatCount = 8 + idx,
+                    modelAnswer = note.detailedExplanation.ifBlank { "1. Introduction\n2. Architecture Diagram\n3. Derivation and Equations\n4. Worked Example\n5. Practical Applications" },
+                    evaluationTip = "Award 3 marks for labeled block diagram, 4 marks for derivation steps, 3 marks for applications."
+                )
+            )
+            derived.add(
+                ExamQuestionItem(
+                    category = "16 Marks",
+                    title = "Q${idx + 1}. Comprehensive Case Study: System design and real-world implementation of ${note.title}.",
+                    repeatCount = 4 + idx,
+                    modelAnswer = note.revisionNotes.ifBlank { "Full system analysis, design trade-offs, and optimization strategies for ${note.title}." },
+                    evaluationTip = "Provide stage-wise architectural flowcharts and trade-off comparisons for full marks."
+                )
+            )
+        }
+        derived.filter { it.category == selectedMarkCategory }
+    }
 
     Box(
         modifier = modifier
@@ -187,12 +194,28 @@ fun ExamModeScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Questions List
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                items(questions) { q ->
-                    ExamQuestionCard(item = q)
+            if (questions.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 40.dp, start = 20.dp, end = 20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No $selectedMarkCategory questions generated yet.\n\nUpload study material or notes to generate exam questions.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = SecondaryText,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    items(questions) { q ->
+                        ExamQuestionCard(item = q)
+                    }
                 }
             }
         }

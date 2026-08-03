@@ -72,6 +72,7 @@ import com.example.ui.theme.CardDark
 import com.example.ui.theme.CyberPurple
 import com.example.ui.theme.ElectricBlue
 import com.example.ui.theme.GlassBorder
+import com.example.ui.theme.SurfaceDark
 import com.example.ui.theme.PrimaryText
 import com.example.ui.theme.SecondaryText
 import com.example.ui.viewmodel.AuthViewModel

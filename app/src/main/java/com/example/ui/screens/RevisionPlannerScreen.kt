@@ -58,19 +58,29 @@ import com.example.ui.theme.StatusWarning
 import com.example.ui.theme.SurfaceDark
 import com.example.ui.viewmodel.StudyViewModel
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.text.style.TextAlign
+
 @Composable
 fun RevisionPlannerScreen(
     viewModel: StudyViewModel,
     modifier: Modifier = Modifier
 ) {
     var activeTab by remember { mutableStateOf("TODAY") }
+    val allNotes by viewModel.notes.collectAsState()
 
-    val revisionTasks = listOf(
-        RevisionTaskItem("r1", "AI - Unit 3 Backpropagation", "High Priority", "Today, 5:00 PM", true, 20),
-        RevisionTaskItem("r2", "Software Engineering - Agile Manifesto", "Medium Priority", "Today, 7:30 PM", false, 15),
-        RevisionTaskItem("r3", "Python - Lambda Functions & Maps", "Completed", "Done Today", true, 10),
-        RevisionTaskItem("r4", "Data Structures - AVL Tree Rotations", "Upcoming", "Tomorrow, 10:00 AM", false, 25)
-    )
+    val revisionTasks = remember(allNotes) {
+        allNotes.mapIndexed { index, note ->
+            RevisionTaskItem(
+                id = note.id,
+                topic = note.title,
+                priority = if (index % 2 == 0) "High Priority" else "Medium Priority",
+                time = "Scheduled Today",
+                isCompleted = false,
+                xp = 20
+            )
+        }
+    }
 
     Box(
         modifier = modifier
@@ -167,79 +177,95 @@ fun RevisionPlannerScreen(
             Spacer(modifier = Modifier.height(18.dp))
 
             // Tasks List
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(revisionTasks) { task ->
-                    var isChecked by remember { mutableStateOf(task.isCompleted) }
+            if (revisionTasks.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 40.dp, start = 20.dp, end = 20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No revision tasks scheduled.\n\nUpload study notes to automatically generate spaced-repetition revision tasks.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = SecondaryText,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(revisionTasks) { task ->
+                        var isChecked by remember { mutableStateOf(task.isCompleted) }
 
-                    GlassCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        backgroundColor = if (isChecked) SurfaceDark else CardDark,
-                        borderColor = if (isChecked) StatusSuccess.copy(alpha = 0.4f) else GlassBorder
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                        GlassCard(
+                            modifier = Modifier.fillMaxWidth(),
+                            backgroundColor = if (isChecked) SurfaceDark else CardDark,
+                            borderColor = if (isChecked) StatusSuccess.copy(alpha = 0.4f) else GlassBorder
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(onClick = {
-                                    isChecked = !isChecked
-                                    if (isChecked) viewModel.addXpPoints(task.xp)
-                                }) {
-                                    Icon(
-                                        imageVector = if (isChecked) Icons.Default.CheckCircle else Icons.Default.Schedule,
-                                        contentDescription = "Check",
-                                        tint = if (isChecked) StatusSuccess else ElectricBlue
-                                    )
-                                }
-
-                                Spacer(modifier = Modifier.width(10.dp))
-
-                                Column {
-                                    Text(
-                                        text = task.topic,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = if (isChecked) SecondaryText else PrimaryText,
-                                        fontSize = 14.sp
-                                    )
-                                    Text(
-                                        text = "${task.time} • +${task.xp} XP",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = ElectricBlueLight,
-                                        fontSize = 11.sp
-                                    )
-                                }
-                            }
-
-                            Box(
+                            Row(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
-                                    .background(
-                                        when (task.priority) {
-                                            "High Priority" -> StatusDanger.copy(alpha = 0.2f)
-                                            "Medium Priority" -> StatusWarning.copy(alpha = 0.2f)
-                                            else -> SurfaceDark
-                                        }
-                                    )
-                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text(
-                                    text = task.priority,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = when (task.priority) {
-                                        "High Priority" -> StatusDanger
-                                        "Medium Priority" -> StatusWarning
-                                        else -> SecondaryText
-                                    },
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(onClick = {
+                                        isChecked = !isChecked
+                                        if (isChecked) viewModel.addXpPoints(task.xp)
+                                    }) {
+                                        Icon(
+                                            imageVector = if (isChecked) Icons.Default.CheckCircle else Icons.Default.Schedule,
+                                            contentDescription = "Check",
+                                            tint = if (isChecked) StatusSuccess else ElectricBlue
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.width(10.dp))
+
+                                    Column {
+                                        Text(
+                                            text = task.topic,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (isChecked) SecondaryText else PrimaryText,
+                                            fontSize = 14.sp
+                                        )
+                                        Text(
+                                            text = "${task.time} • +${task.xp} XP",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = ElectricBlueLight,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(
+                                            when (task.priority) {
+                                                "High Priority" -> StatusDanger.copy(alpha = 0.2f)
+                                                "Medium Priority" -> StatusWarning.copy(alpha = 0.2f)
+                                                else -> SurfaceDark
+                                            }
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                ) {
+                                    Text(
+                                        text = task.priority,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = when (task.priority) {
+                                            "High Priority" -> StatusDanger
+                                            "Medium Priority" -> StatusWarning
+                                            else -> SecondaryText
+                                        },
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }

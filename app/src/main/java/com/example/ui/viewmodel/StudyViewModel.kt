@@ -188,6 +188,13 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
     fun updateSubject(subject: SubjectEntity) {
         viewModelScope.launch {
             repository.updateSubject(subject)
+            authRepository.syncSubjectToFirestore(
+                subjectId = subject.id,
+                name = subject.name,
+                code = subject.code,
+                semester = subject.semester,
+                completion = subject.completionPercentage
+            )
             if (_selectedSubject.value?.id == subject.id) {
                 _selectedSubject.value = subject
             }
@@ -198,6 +205,7 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
     fun deleteSubject(subjectId: String) {
         viewModelScope.launch {
             repository.deleteSubject(subjectId)
+            authRepository.deleteSubjectFromFirestore(subjectId)
             if (_selectedSubject.value?.id == subjectId) {
                 _selectedSubject.value = null
                 _unitsForSelectedSubject.value = emptyList()
@@ -265,6 +273,13 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
                 displayOrder = nextOrder
             )
             repository.addSubject(newSub)
+            authRepository.syncSubjectToFirestore(
+                subjectId = newSub.id,
+                name = newSub.name,
+                code = newSub.code,
+                semester = newSub.semester,
+                completion = newSub.completionPercentage
+            )
 
             // Add default 5 units with guaranteed unique IDs
             val units = listOf(
@@ -378,64 +393,49 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
             val promptExplain = "Provide a detailed step-by-step breakdown and exam tips for:\n\n$rawContent"
             val explanation = repository.generateAiResponse(promptExplain, "Provide a clear structured educational breakdown.")
 
-            val keyPointsList = listOf(
-                "Primary objective: Core architectural principles established in $title.",
-                "System design trade-off: Latency vs Space efficiency breakdown.",
-                "Exam emphasis: High priority topic for university 13 & 16-mark questions.",
-                "Practical applicability: Used in modern distributed and embedded frameworks."
-            )
+            val keyPointsPrompt = "Extract 4 key bullet points directly from the following study material:\n\n$rawContent"
+            val keyPointsResp = repository.generateAiResponse(keyPointsPrompt, "Return 4 concise bullet points.")
+            val keyPointsList = keyPointsResp.lines().filter { it.isNotBlank() }.take(6)
+                .ifEmpty { listOf("Key takeaway from $title: " + summary.take(100)) }
 
-            val definitionsList = listOf(
-                "Core Concept 1: Foundational law or rule derived from uploaded material.",
-                "Terminology 2: Specific technical definition and exact mathematical formula.",
-                "Boundary Condition: Constraints and operational range for system execution."
-            )
+            val defsPrompt = "Extract key definitions and technical terms from this content:\n\n$rawContent"
+            val defsResp = repository.generateAiResponse(defsPrompt, "Return terms and definitions in format 'Term: Definition'.")
+            val definitionsList = defsResp.lines().filter { it.isNotBlank() }.take(5)
+                .ifEmpty { listOf("Core Concept: $title") }
 
-            val formulasList = listOf(
-                "System Efficiency = Useful Energy Output / Total Energy Input * 100%",
-                "Time Complexity = O(N log N) worst-case upper bound",
-                "Heuristic Cost f(n) = Path Cost g(n) + Estimated Cost h(n)"
-            )
+            val formulasPrompt = "Extract important formulas, equations, or laws from this content (if none, state core principles):\n\n$rawContent"
+            val formulasResp = repository.generateAiResponse(formulasPrompt, "Return formulas line by line.")
+            val formulasList = formulasResp.lines().filter { it.isNotBlank() }.take(5)
+                .ifEmpty { listOf("Core Principle: Essential concepts from $title.") }
 
             val flowchartList = listOf(
-                "[Start Document Process]",
-                "  ├── Input Raw Material / Formula",
-                "  ├── Apply Processing Algorithm / Transformation",
-                "  ├── Validate Output Constraints & Error Bounds",
-                "  └── [Output Verified Result]"
+                "[Start: $title]",
+                "  ├── Input Processing",
+                "  ├── Core Transformation",
+                "  └── [Output Result]"
             )
 
             val mindMapList = listOf(
                 if (title.isBlank()) "Study Material" else title,
-                "Core Principles & Definitions",
-                "Formula Derivations & Analytics",
-                "Algorithmic Flowcharts & Execution",
-                "University Exam Mark Questions & Viva"
+                "Core Principles",
+                "Key Formulas & Definitions",
+                "Process Flowchart",
+                "Exam Questions & Viva"
             )
 
-            val vivaQuestionsList = listOf(
-                "Q: What is the primary purpose of this topic in engineering practice? -> A: It provides optimized execution bounds and modular structural design.",
-                "Q: What is the worst-case time complexity? -> A: O(N^2) without balance or optimization factors.",
-                "Q: State one critical limitation of this approach. -> A: Requires pre-allocated contiguous memory blocks."
-            )
+            val vivaPrompt = "Generate 3 viva voce interview questions and answers based on this text:\n\n$rawContent"
+            val vivaResp = repository.generateAiResponse(vivaPrompt, "Format as Q: ... -> A: ... line by line.")
+            val vivaQuestionsList = vivaResp.lines().filter { it.isNotBlank() }.take(5)
+                .ifEmpty { listOf("Q: Explain $title -> A: " + summary.take(120)) }
 
-            val shortQs = listOf(
-                "Q1 (2 Marks): Define ${title.ifBlank { "the core concept" }}.\nAnswer: It is an established engineering principle where system inputs are transformed into deterministic outputs with minimal loss.",
-                "Q2 (2 Marks): State the condition for optimality.\nAnswer: The heuristic function h(n) must be admissible (h(n) <= h*(n))."
-            )
+            val shortQs = listOf("2 Marks: Explain the fundamental concept of $title.")
+            val mediumQs = listOf("5 Marks: Describe the architecture and key features of $title.")
+            val longQs = listOf("13/16 Marks: Detailed step-by-step analysis and derivation for $title based on uploaded study material.")
 
-            val mediumQs = listOf(
-                "Q1 (5 Marks): Compare and contrast the primary approaches in $title.\nAnswer: Includes comparative analysis, memory footprint differences, and time complexity trade-offs."
-            )
-
-            val longQs = listOf(
-                "Q1 (13/16 Marks): Derive the complete step-by-step mathematical formulation and draw the block architecture diagram for $title.\nAnswer: 1. Introduction, 2. Block Diagram, 3. Mathematical Proof, 4. Worked Example, 5. Applications."
-            )
-
-            val mcqsList = listOf(
-                "Q1: What is the main metric evaluated in $title?\nA) Latency\nB) Color\nC) Temperature\nD) Random\nCorrect: A) Latency",
-                "Q2: Which algorithmic strategy is applied?\nA) Dynamic Programming\nB) Greedy Choice\nC) Divide & Conquer\nD) All of the above\nCorrect: D) All of the above"
-            )
+            val mcqsPrompt = "Generate 2 multiple choice questions (with options A, B, C, D and correct answer) from:\n\n$rawContent"
+            val mcqsResp = repository.generateAiResponse(mcqsPrompt, "Return clear multiple choice questions with correct answer.")
+            val mcqsList = mcqsResp.lines().filter { it.isNotBlank() }.take(8)
+                .ifEmpty { listOf("Q1: What is the main topic of this material?\nA) $title\nB) Unknown\nCorrect: A") }
 
             val revisionNotesText = "### 📌 Quick Revision Sheet for $title\n\n" +
                     "• **Key Summary:** $summary\n\n" +
@@ -566,46 +566,118 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
                 append(userPrompt)
             }
 
+            // 1. Capture previous chat history BEFORE adding current message for multi-turn memory
+            val recentHistory = chatMessages.value.takeLast(8)
+            val historyText = if (recentHistory.isNotEmpty()) {
+                "[CONVERSATION HISTORY]:\n" +
+                recentHistory.joinToString("\n") { msg ->
+                    val senderLabel = if (msg.sender == "USER") "User" else "AI Tutor (Ben)"
+                    "$senderLabel: ${msg.message}"
+                } + "\n\n"
+            } else ""
+
             val userMsg = ChatMessageEntity(sender = "USER", message = fullUserPrompt)
             repository.addChatMessage(userMsg)
 
             _isAiThinking.value = true
 
             val systemInstruction = buildString {
-                append("You are StudyMate AI Tutor, an expert engineering study assistant.\n")
-                append("When answering questions connected to uploaded study materials, reference the specific uploaded material.\n")
-                append("IMPORTANT: If the user asks for information or concepts that are NOT present or covered in the provided study material, clearly state 'Based on your uploaded study material, this information is not mentioned in the document' instead of inventing content.\n")
+                append("You are Ben, an intelligent, empathetic, and conversational AI Study Tutor (like ChatGPT) in StudyMate AI.\n")
+                append("CORE RULES:\n")
+                append("1. Answer in a natural, conversational, and engaging style like ChatGPT. Do not use robotic boilerplate, fake placeholders, or repetitive intros.\n")
+                append("2. Remember and maintain full conversation history. Use the conversation context to answer follow-up questions (e.g., 'give an example', 'explain step 2', 'summarize that').\n")
+                append("3. Document Integration:\n")
+                append("   - Search [ATTACHED & UPLOADED DOCUMENTS] first.\n")
+                append("   - If the answer is in the uploaded documents, answer directly from them and cite the document title/filename (e.g. 'Source: Unit3_Notes.pdf').\n")
+                append("   - If the answer is NOT in uploaded documents, state clearly: 'Not found in your uploaded notes. Here is the answer from general AI textbook knowledge:' and provide the complete answer.\n")
+                append("4. Honesty & Accuracy: If you do not know an answer or lack sufficient information, say so honestly instead of making up facts.\n")
+                append("5. Every answer should feel tailored specifically to the user's question.\n")
+
                 when (modeOverride) {
-                    "BEGINNER" -> append("Explain in Beginner Mode: Use simple everyday analogies, clear language, no heavy jargon, and step-by-step intuition.\n")
-                    "COLLEGE" -> append("Explain in College Mode: Provide balanced academic depth suitable for engineering undergraduates with clear formulas and diagrams.\n")
-                    "EXAM" -> append("Explain in Exam Mode: Structure the answer strictly according to university exam criteria (Introduction, Labeled Diagram/Architecture, Core Formula, Derivation/Analysis, Applications, and Conclusion).\n")
-                    "VIVA" -> append("Explain in Viva Voce Mode: Focus on quick-fire conceptual Q&A, trick questions, and key definitions.\n")
-                    else -> append("Provide a comprehensive, high-clarity academic response.\n")
+                    "BEGINNER" -> append("6. Style Mode: Beginner. Use simple real-world analogies, step-by-step intuitive logic, no jargon.\n")
+                    "COLLEGE" -> append("6. Style Mode: College. Provide deep academic depth, formulas, architectural diagrams, and engineering trade-offs.\n")
+                    "EXAM" -> append("6. Style Mode: Exam. Structure strictly according to university exam criteria (Title, Introduction, Labeled Diagram/Architecture, Core Formula, Derivation, Applications, and Conclusion).\n")
+                    "VIVA" -> append("6. Style Mode: Viva Voce. Focus on quick-fire Q&A, trick questions, and key definitions.\n")
+                    else -> append("6. Style Mode: Balanced, high-clarity academic response.\n")
                 }
 
                 when (language) {
-                    "Tamil" -> append("Respond in clear Tamil language (தமிழ்).\n")
-                    "Tanglish" -> append("Respond in Tanglish (conversational Tamil + English blend commonly used by engineering students in Tamil Nadu).\n")
-                    else -> append("Respond in English.\n")
+                    "Tamil" -> append("7. Language: Respond in clear Tamil (தமிழ்).\n")
+                    "Tanglish" -> append("7. Language: Respond in Tanglish (conversational blend of Tamil + English used naturally by students).\n")
+                    else -> append("7. Language: Respond in English.\n")
                 }
 
-                if (outputFormat != null) {
-                    append("Format output specifically as: $outputFormat.\n")
+                if (!outputFormat.isNullOrBlank()) {
+                    append("8. Required Output Format: Structure response as $outputFormat.\n")
                 }
             }
 
-            val currentNote = selectedNote.value
-            val recentFiles = uploadedFiles.value.take(3)
-            val filesContextText = if (recentFiles.isNotEmpty()) {
-                "\n[Uploaded Files Context]:\n" + recentFiles.joinToString("\n---\n") { "${it.fileName}: ${it.extractedText}" }
+            val queryKeywords = userPrompt.lowercase().split(Regex("\\W+")).filter { it.length > 2 }
+            val matchingDocs = mutableListOf<String>()
+
+            val isFollowUp = userPrompt.length < 30 || queryKeywords.any { kw ->
+                listOf("example", "more", "explain", "why", "how", "details", "summary", "this", "that", "code", "diagram").contains(kw)
+            }
+
+            // 1. Search uploaded files
+            uploadedFiles.value.forEach { file ->
+                val fileTextLower = file.extractedText.lowercase()
+                val fileNameLower = file.fileName.lowercase()
+                val isAttached = attachedPdfName != null && fileNameLower.contains(attachedPdfName.lowercase())
+                val matchesKeyword = queryKeywords.any { kw -> fileNameLower.contains(kw) || fileTextLower.contains(kw) }
+                if (isAttached || matchesKeyword || isFollowUp) {
+                    val snippet = if (file.extractedText.length > 3000) file.extractedText.take(3000) + "..." else file.extractedText
+                    if (snippet.isNotBlank()) {
+                        matchingDocs.add("Document [File: ${file.fileName} (${file.fileType})]:\n$snippet")
+                    }
+                }
+            }
+
+            // 2. Search study notes
+            notes.value.forEach { note ->
+                val titleLower = note.title.lowercase()
+                val textLower = note.rawText.lowercase()
+                val matchesKeyword = queryKeywords.any { kw -> titleLower.contains(kw) || textLower.contains(kw) }
+                val isSelected = selectedNote.value?.id == note.id
+                if (isSelected || matchesKeyword || isFollowUp) {
+                    val content = note.rawText.ifBlank { note.detailedExplanation }
+                    val snippet = if (content.length > 3000) content.take(3000) + "..." else content
+                    if (snippet.isNotBlank()) {
+                        matchingDocs.add("Document [Note: ${note.title}]:\n$snippet")
+                    }
+                }
+            }
+
+            // 3. Search question papers
+            allQuestionPapers.value.forEach { paper ->
+                val fileNameLower = paper.fileName.lowercase()
+                val questionsLower = paper.extractedQuestionsJson.lowercase()
+                val matchesKeyword = queryKeywords.any { kw -> fileNameLower.contains(kw) || questionsLower.contains(kw) }
+                if (matchesKeyword || isFollowUp) {
+                    val snippet = if (paper.extractedQuestionsJson.length > 3000) paper.extractedQuestionsJson.take(3000) + "..." else paper.extractedQuestionsJson
+                    if (snippet.isNotBlank()) {
+                        matchingDocs.add("Document [Question Paper: ${paper.fileName}]:\n$snippet")
+                    }
+                }
+            }
+
+            val documentContext = if (matchingDocs.isNotEmpty()) {
+                "[ATTACHED & UPLOADED DOCUMENTS]:\n\n" +
+                matchingDocs.distinct().take(4).joinToString("\n\n---\n\n") + "\n\n"
+            } else if (useOnlyNotes && (uploadedFiles.value.isNotEmpty() || notes.value.isNotEmpty())) {
+                val fallbackDocs = (uploadedFiles.value.map { "File: ${it.fileName}\n${it.extractedText}" } +
+                        notes.value.map { "Note: ${it.title}\n${it.rawText}" }).take(4)
+                "[STUDY DOCUMENTS]:\n\n" + fallbackDocs.joinToString("\n\n---\n\n") + "\n\n"
             } else ""
 
-            val contextNoteText = if (useOnlyNotes || currentNote != null || recentFiles.isNotEmpty()) {
-                "Based STRICTLY on the following uploaded study material:\nNote: ${currentNote?.rawText ?: ""}$filesContextText\n\nQuestion: $fullUserPrompt"
-            } else fullUserPrompt
+            val fullPromptToGemini = buildString {
+                if (historyText.isNotBlank()) append(historyText)
+                if (documentContext.isNotBlank()) append(documentContext)
+                append("[CURRENT USER QUESTION]:\n").append(fullUserPrompt)
+            }
 
             val aiResponseText = repository.generateAiResponse(
-                prompt = contextNoteText,
+                prompt = fullPromptToGemini,
                 systemPrompt = systemInstruction,
                 modelOverride = userProfile.value?.selectedAiModel
             )
@@ -615,7 +687,7 @@ class StudyViewModel(application: Application) : AndroidViewModel(application) {
                 sender = "AI",
                 message = aiResponseText,
                 isCode = isCode,
-                suggestedPillsJson = JSONArray(listOf("Explain simpler", "Generate 2-Mark Qs", "Generate Quiz", "Translate to Tanglish")).toString()
+                suggestedPillsJson = JSONArray(listOf("Explain simpler", "Give an example", "Generate Quiz", "Translate to Tanglish")).toString()
             )
             repository.addChatMessage(aiMsg)
             authRepository.syncChatMessageToFirestore(

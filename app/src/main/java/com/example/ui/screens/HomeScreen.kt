@@ -121,6 +121,7 @@ fun HomeScreen(
     var showCreateDialog by remember { mutableStateOf(false) }
     var showDailyWelcomeDialog by remember { mutableStateOf(false) }
     val subjectsList by viewModel.subjects.collectAsState()
+    val userProfile by viewModel.userProfile.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
 
     val fabTransition = rememberInfiniteTransition(label = "fabPulse")
@@ -352,13 +353,13 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        ProgressRing(percentage = 72, radius = 44.dp, strokeWidth = 8.dp)
+                        ProgressRing(percentage = userProfile?.semesterProgressPercent ?: 0, radius = 44.dp, strokeWidth = 8.dp)
 
                         Spacer(modifier = Modifier.width(18.dp))
 
                         Column(modifier = Modifier.weight(1f)) {
                             // Streak pill with pulsing fire
-                            AnimatedStreakFlame(streakDays = 12)
+                            AnimatedStreakFlame(streakDays = userProfile?.streakDays ?: 0)
 
                             Spacer(modifier = Modifier.height(12.dp))
 
@@ -372,7 +373,7 @@ fun HomeScreen(
                             ) {
                                 Column {
                                     Text(
-                                        text = "CURRENT GOAL",
+                                        text = "CURRENT STREAK & XP",
                                         style = MaterialTheme.typography.labelMedium,
                                         fontSize = 9.sp,
                                         fontWeight = FontWeight.Bold,
@@ -380,7 +381,7 @@ fun HomeScreen(
                                     )
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
-                                        text = "Finish AI Unit 3",
+                                        text = "${userProfile?.xpPoints ?: 0} XP  •  ${userProfile?.coins ?: 0} Coins",
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                         color = PrimaryText,
@@ -731,7 +732,7 @@ fun HomeScreen(
         // Ben Daily Welcome Dialog
         if (showDailyWelcomeDialog) {
             BenDailyWelcomeDialog(
-                streakDays = 12,
+                streakDays = userProfile?.streakDays ?: 0,
                 onClaimReward = { xp, coins ->
                     viewModel.addXpAndCoins(xp, coins)
                     viewModel.navigateTo("AI_CHAT")

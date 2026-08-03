@@ -1,6 +1,8 @@
 package com.example.ui.screens
 
 import android.net.Uri
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -159,15 +161,31 @@ fun UploadNotesScreen(
         if (uris.isNotEmpty()) {
             val newStaged = uris.mapIndexed { index, uri ->
                 val fileName = uri.lastPathSegment?.substringAfterLast("/") ?: "Document_${index + 1}.pdf"
+                var extractedText = ""
+                try {
+                    context.contentResolver.openInputStream(uri)?.use { stream ->
+                        val bytes = stream.readBytes()
+                        val text = String(bytes, Charsets.UTF_8)
+                        if (text.isNotBlank() && text.none { it.code == 0 }) {
+                            extractedText = text.take(5000)
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                if (extractedText.isBlank()) {
+                    extractedText = "Uploaded file: $fileName. Document attached for processing and AI analysis."
+                }
+
                 StagedFile(
                     name = fileName,
                     type = if (fileName.endsWith(".ppt", ignoreCase = true) || fileName.endsWith(".pptx", ignoreCase = true)) "PPT"
                     else if (fileName.endsWith(".docx", ignoreCase = true) || fileName.endsWith(".doc", ignoreCase = true)) "DOCX"
                     else if (fileName.endsWith(".txt", ignoreCase = true)) "TXT"
                     else "PDF",
-                    sizeFormatted = "${(1.2 + index * 0.4).format(1)} MB",
+                    sizeFormatted = "1.5 MB",
                     uri = uri,
-                    sampleText = "Extracted content from $fileName: Artificial Intelligence and Deep Learning architectures with convolutional layers and backpropagation optimization."
+                    sampleText = extractedText
                 )
             }
             stagedFiles = stagedFiles + newStaged
@@ -188,7 +206,7 @@ fun UploadNotesScreen(
                 name = "CameraScan_${System.currentTimeMillis().toString().takeLast(4)}.jpg",
                 type = "CAMERA",
                 sizeFormatted = "2.4 MB",
-                sampleText = "[OCR Camera Scan Result]: Neural network gradient descent updates weights according to w = w - alpha * dL/dw. Activation functions introduce non-linearity."
+                sampleText = "Scanned notes photo attached. Ready for AI processing and analysis."
             )
             stagedFiles = stagedFiles + newScan
             if (title.isBlank()) title = "Handwritten Notes Scan"
@@ -493,7 +511,12 @@ fun UploadNotesScreen(
                     onClick = {
                         val finalContent = if (noteContent.isNotBlank()) noteContent
                         else if (stagedFiles.isNotEmpty()) stagedFiles.joinToString("\n\n") { it.sampleText }
-                        else "Chapter 3: Deep Learning Architectures and Backpropagation Optimization."
+                        else ""
+
+                        if (finalContent.isBlank()) {
+                            Toast.makeText(context, "Please enter note text or select a document to process.", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
 
                         val finalTitle = if (title.isNotBlank()) title
                         else stagedFiles.firstOrNull()?.name?.substringBeforeLast(".") ?: "Study Material"

@@ -85,9 +85,9 @@ fun GamificationScreen(
     var missions by remember {
         mutableStateOf(
             listOf(
-                MissionItem("m1", "Read 2 Chapters in OS / AI", "+100 XP • 20 Coins", 100, 20, false),
+                MissionItem("m1", "Read 2 Chapters in Study Notes", "+100 XP • 20 Coins", 100, 20, false),
                 MissionItem("m2", "Solve 25 MCQs in Exam Mode", "+150 XP • 40 Coins", 150, 40, false),
-                MissionItem("m3", "Upload & Summarize Study PDF", "+120 XP • 30 Coins", 120, 30, true),
+                MissionItem("m3", "Upload & Summarize Study PDF", "+120 XP • 30 Coins", 120, 30, false),
                 MissionItem("m4", "Complete Daily Flashcard Revision", "+80 XP • 15 Coins", 80, 15, false),
                 MissionItem("m5", "Finish 1 Full Unit Mock Test", "+200 XP • 50 Coins", 200, 50, false)
             )
@@ -101,12 +101,15 @@ fun GamificationScreen(
         "100 Days" to "Hall Of Fame 🏆"
     )
 
+    val streak = profile?.streakDays ?: 0
+    val xp = profile?.xpPoints ?: 0
+
     val badges = listOf(
-        BadgeItem("b1", "12-Day Streak Master", "Maintained 12 days continuous study streak", "🔥", true),
-        BadgeItem("b2", "Flashcard Scholar", "Mastered 100+ flashcards in AI & SE", "⚡", true),
-        BadgeItem("b3", "Quiz Champion", "Scored 100% accuracy in 5 consecutive quizzes", "🏆", true),
-        BadgeItem("b4", "Night Owl Engineer", "Studied after 11 PM for 3 consecutive days", "🦉", false),
-        BadgeItem("b5", "Ben's Legend", "Achieved Level 10 Learner Status", "👑", true)
+        BadgeItem("b1", "Streak Master", "Maintain 7+ days continuous study streak", "🔥", streak >= 7),
+        BadgeItem("b2", "Flashcard Scholar", "Master flashcards across subjects", "⚡", xp >= 300),
+        BadgeItem("b3", "Quiz Champion", "Score 100% accuracy in quizzes", "🏆", xp >= 500),
+        BadgeItem("b4", "Night Owl Engineer", "Study after 11 PM for consecutive days", "🦉", xp >= 800),
+        BadgeItem("b5", "Ben's Legend", "Achieve Level 10 Learner Status", "👑", xp >= 1000)
     )
 
     Box(

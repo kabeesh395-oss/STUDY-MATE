@@ -231,6 +231,20 @@ class FirebaseAuthRepository {
         }
     }
 
+    suspend fun deleteSubjectFromFirestore(subjectId: String): Result<Unit> {
+        return try {
+            val uid = currentUser?.uid ?: "anonymous_student"
+            val firestoreInstance = firestore ?: return Result.success(Unit)
+            firestoreInstance.collection("users").document(uid)
+                .collection("subjects").document(subjectId)
+                .delete().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.w("FirebaseAuthRepo", "Firestore deleteSubject note: ${e.message}")
+            Result.success(Unit)
+        }
+    }
+
     suspend fun syncUploadedFileToFirestore(
         fileId: String,
         fileName: String,

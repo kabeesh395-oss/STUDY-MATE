@@ -6,8 +6,8 @@ import com.squareup.moshi.JsonClass
 @JsonClass(generateAdapter = true)
 data class GeminiRequest(
     val contents: List<GeminiContent>,
-    val generationConfig: GeminiGenerationConfig? = null,
-    val systemInstruction: GeminiContent? = null
+    @Json(name = "generationConfig") val generationConfig: GeminiGenerationConfig? = null,
+    @Json(name = "systemInstruction") val systemInstruction: GeminiContent? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -19,7 +19,7 @@ data class GeminiContent(
 @JsonClass(generateAdapter = true)
 data class GeminiPart(
     val text: String? = null,
-    val inlineData: GeminiInlineData? = null
+    @Json(name = "inlineData") val inlineData: GeminiInlineData? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -30,10 +30,10 @@ data class GeminiInlineData(
 
 @JsonClass(generateAdapter = true)
 data class GeminiGenerationConfig(
-    val temperature: Float? = 0.7f,
-    val topP: Float? = 0.95f,
-    val topK: Int? = 40,
-    val responseMimeType: String? = null
+    val temperature: Float? = null,
+    val topP: Float? = null,
+    val topK: Int? = null,
+    @Json(name = "responseMimeType") val responseMimeType: String? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -45,3 +45,4 @@ data class GeminiResponse(
 data class GeminiCandidate(
     val content: GeminiContent? = null
 )
+
