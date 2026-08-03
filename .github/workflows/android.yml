@@ -24,10 +24,13 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v4
 
-    - name: Validate & prepare Gradle Wrapper
+    - name: Validate & prepare Gradle Wrapper & Environment
       run: |
         sed -i 's/\r$//' gradlew
         chmod +x gradlew
+        if [ ! -f .env ] && [ -f .env.example ]; then
+          cp .env.example .env
+        fi
         mkdir -p gradle/wrapper
         if [ ! -f gradle/wrapper/gradle-wrapper.jar ] || ! unzip -t gradle/wrapper/gradle-wrapper.jar >/dev/null 2>&1; then
           echo "gradle-wrapper.jar is missing or corrupted. Repairing wrapper..."

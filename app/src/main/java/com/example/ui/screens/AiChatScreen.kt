@@ -1,8 +1,14 @@
 package com.example.ui.screens
 
+import android.Manifest
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.speech.RecognizerIntent
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.scaleIn
@@ -71,6 +77,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import java.util.Locale
 import com.example.data.local.entities.ChatMessageEntity
 import com.example.ui.components.BenAvatar
 import com.example.ui.components.BenMood
@@ -85,6 +93,7 @@ import com.example.ui.theme.ElectricBlueLight
 import com.example.ui.theme.GlassBorder
 import com.example.ui.theme.PrimaryText
 import com.example.ui.theme.SecondaryText
+import com.example.ui.theme.StatusDanger
 import com.example.ui.theme.SurfaceDark
 import com.example.ui.viewmodel.StudyViewModel
 
@@ -111,6 +120,96 @@ fun AiChatScreen(
     // Attachments
     var attachedPdf by remember { mutableStateOf<String?>(null) }
     var attachedImage by remember { mutableStateOf<String?>(null) }
+
+    // Activity Launchers for PDF and Image picking from device storage/album
+    val pdfPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: android.net.Uri? ->
+        if (uri != null) {
+            val name = getFileNameFromUri(context, uri) ?: "Attached_Document.pdf"
+            attachedPdf = name
+            Toast.makeText(context, "Attached document: $name", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: android.net.Uri? ->
+        if (uri != null) {
+            val name = getFileNameFromUri(context, uri) ?: "Attached_Photo.jpg"
+            attachedImage = name
+            Toast.makeText(context, "Attached photo from album: $name", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // Speech To Text (Voice Input)
+    var isListening by remember { mutableStateOf(false) }
+
+    val speechRecognizerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        isListening = false
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spokenTextList = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+            if (!spokenTextList.isNullOrEmpty()) {
+                val recognizedText = spokenTextList[0]
+                if (recognizedText.isNotBlank()) {
+                    inputText = if (inputText.isBlank()) recognizedText else "$inputText $recognizedText"
+                    Toast.makeText(context, "Captured voice question!", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    val audioPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            val localeCode = when (selectedLanguage) {
+                "Tamil" -> "ta-IN"
+                "Tanglish" -> "ta-IN"
+                else -> "en-US"
+            }
+            val speechIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, localeCode)
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak your question to Ben (AI Tutor)...")
+            }
+            try {
+                isListening = true
+                speechRecognizerLauncher.launch(speechIntent)
+            } catch (e: Exception) {
+                isListening = false
+                Toast.makeText(context, "Speech recognition is not available on this device", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(context, "Microphone permission is required for voice input", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun startVoiceInput() {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            val localeCode = when (selectedLanguage) {
+                "Tamil" -> "ta-IN"
+                "Tanglish" -> "ta-IN"
+                else -> "en-US"
+            }
+            val speechIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, localeCode)
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak your question to Ben (AI Tutor)...")
+            }
+            try {
+                isListening = true
+                speechRecognizerLauncher.launch(speechIntent)
+            } catch (e: Exception) {
+                isListening = false
+                Toast.makeText(context, "Speech recognition is not available on this device", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            audioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
 
     val chatMessages by viewModel.chatMessages.collectAsState()
     val isThinking by viewModel.isAiThinking.collectAsState()
@@ -442,28 +541,54 @@ fun AiChatScreen(
                 }
             }
 
-            // 5. Active Attachment Chips Bar (PDF & Image)
-            if (attachedPdf != null || attachedImage != null) {
-                Row(
+            // 5. Active Attachment Chips Bar & Voice Status
+            if (isListening || attachedPdf != null || attachedImage != null) {
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    attachedPdf?.let { pdfName ->
-                        AttachmentBadge(
-                            icon = Icons.Default.PictureAsPdf,
-                            label = pdfName,
-                            onRemove = { attachedPdf = null }
-                        )
+                    if (isListening) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(StatusDanger.copy(alpha = 0.15f))
+                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                        ) {
+                            Icon(Icons.Default.Mic, contentDescription = "Listening", tint = StatusDanger, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "Listening... Speak your study question now",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = StatusDanger,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
 
-                    attachedImage?.let { imgName ->
-                        AttachmentBadge(
-                            icon = Icons.Default.Image,
-                            label = imgName,
-                            onRemove = { attachedImage = null }
-                        )
+                    if (attachedPdf != null || attachedImage != null) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            attachedPdf?.let { pdfName ->
+                                AttachmentBadge(
+                                    icon = Icons.Default.PictureAsPdf,
+                                    label = pdfName,
+                                    onRemove = { attachedPdf = null }
+                                )
+                            }
+
+                            attachedImage?.let { imgName ->
+                                AttachmentBadge(
+                                    icon = Icons.Default.Image,
+                                    label = imgName,
+                                    onRemove = { attachedImage = null }
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -479,8 +604,12 @@ fun AiChatScreen(
                 // Attach PDF Button
                 IconButton(
                     onClick = {
-                        attachedPdf = "Unit3_DataStructures_Notes.pdf"
-                        Toast.makeText(context, "Attached PDF for AI Summarization", Toast.LENGTH_SHORT).show()
+                        try {
+                            pdfPickerLauncher.launch("*/*")
+                        } catch (e: Exception) {
+                            attachedPdf = "Attached_Document.pdf"
+                            Toast.makeText(context, "Attached PDF document", Toast.LENGTH_SHORT).show()
+                        }
                     },
                     modifier = Modifier.size(38.dp)
                 ) {
@@ -495,8 +624,12 @@ fun AiChatScreen(
                 // Attach Image Button
                 IconButton(
                     onClick = {
-                        attachedImage = "CircuitDiagram_Scan.png"
-                        Toast.makeText(context, "Attached Image for AI Vision Analysis", Toast.LENGTH_SHORT).show()
+                        try {
+                            imagePickerLauncher.launch("image/*")
+                        } catch (e: Exception) {
+                            attachedImage = "Album_Photo.jpg"
+                            Toast.makeText(context, "Attached photo from album", Toast.LENGTH_SHORT).show()
+                        }
                     },
                     modifier = Modifier.size(38.dp)
                 ) {
@@ -525,11 +658,12 @@ fun AiChatScreen(
                         unfocusedContainerColor = CardDark
                     ),
                     trailingIcon = {
-                        IconButton(onClick = {
-                            inputText = "Explain the A* Search algorithm for my Anna University exam."
-                            Toast.makeText(context, "Voice input activated", Toast.LENGTH_SHORT).show()
-                        }) {
-                            Icon(Icons.Default.Mic, contentDescription = "Voice Input", tint = SecondaryText)
+                        IconButton(onClick = { startVoiceInput() }) {
+                            Icon(
+                                imageVector = Icons.Default.Mic,
+                                contentDescription = "Voice Input",
+                                tint = if (isListening) StatusDanger else ElectricBlue
+                            )
                         }
                     }
                 )
@@ -707,4 +841,26 @@ fun ChatMessageBubble(
             }
         }
     }
+}
+
+private fun getFileNameFromUri(context: Context, uri: android.net.Uri): String? {
+    var fileName: String? = null
+    if (uri.scheme == "content") {
+        try {
+            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    if (nameIndex != -1) {
+                        fileName = cursor.getString(nameIndex)
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+    if (fileName == null) {
+        fileName = uri.path?.substringAfterLast('/')
+    }
+    return fileName
 }
