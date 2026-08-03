@@ -269,24 +269,24 @@ fun DashboardSection() {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            MetricCard("LinkedIn Score", "88/100", "+5 pts", Icons.Default.Work, Color(0xFF0A66C2), Modifier.weight(1f))
-            MetricCard("GitHub Commits", "245", "+12 this wk", Icons.Default.Code, Color(0xFF2DBA4E), Modifier.weight(1f))
+            MetricCard("LinkedIn Score", "0/100", "Not Connected", Icons.Default.Work, Color(0xFF0A66C2), Modifier.weight(1f))
+            MetricCard("GitHub Commits", "0", "0 this wk", Icons.Default.Code, Color(0xFF2DBA4E), Modifier.weight(1f))
         }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            MetricCard("LeetCode Solved", "128", "60E • 52M • 16H", Icons.Default.Build, Color(0xFFFFA116), Modifier.weight(1f))
-            MetricCard("Unstop Apps", "6 Active", "2 Shortlisted", Icons.Default.School, Color(0xFF1B365D), Modifier.weight(1f))
+            MetricCard("LeetCode Solved", "0", "0E • 0M • 0H", Icons.Default.Build, Color(0xFFFFA116), Modifier.weight(1f))
+            MetricCard("Unstop Apps", "0 Active", "0 Applied", Icons.Default.School, Color(0xFF1B365D), Modifier.weight(1f))
         }
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            MetricCard("Coding Streak", "14 Days 🔥", "Best 21", Icons.Default.EmojiEvents, FlameOrange, Modifier.weight(1f))
-            MetricCard("Weekly Learning", "16.5 Hrs", "Top 5%", Icons.Default.BarChart, CyberPurple, Modifier.weight(1f))
+            MetricCard("Coding Streak", "0 Days 🔥", "Day 1", Icons.Default.EmojiEvents, FlameOrange, Modifier.weight(1f))
+            MetricCard("Weekly Learning", "0.0 Hrs", "Start Today", Icons.Default.BarChart, CyberPurple, Modifier.weight(1f))
         }
     }
 }
@@ -609,21 +609,20 @@ fun GitHubSection(onOpenUrl: () -> Unit, viewModel: StudyViewModel) {
             Column(modifier = Modifier.padding(18.dp)) {
                 Text("Commit Streak Tracker", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryText)
                 Spacer(modifier = Modifier.height(6.dp))
-                Text("Current Streak: 14 Days (245 commits in 2026)", style = MaterialTheme.typography.bodyMedium, color = StatusSuccess, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text("Current Streak: 0 Days (0 commits)", style = MaterialTheme.typography.bodyMedium, color = MutedText, fontWeight = FontWeight.Bold, fontSize = 12.sp)
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Simulated Contribution Grid
+                // Contribution Grid for fresh user
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     repeat(12) { col ->
                         Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                             repeat(5) { row ->
-                                val active = (col + row) % 3 != 0
                                 Box(
                                     modifier = Modifier
                                         .size(14.dp)
                                         .clip(RoundedCornerShape(3.dp))
-                                        .background(if (active) Color(0xFF2DBA4E) else Color(0x1AFFFFFF))
+                                        .background(Color(0x1AFFFFFF))
                                 )
                             }
                         }
@@ -683,14 +682,26 @@ fun GitHubSection(onOpenUrl: () -> Unit, viewModel: StudyViewModel) {
 @Composable
 fun LeetCodeSection(onOpenUrl: () -> Unit, viewModel: StudyViewModel) {
     var selectedDifficultyFilter by remember { mutableStateOf("ALL") }
+    val solvedStateMap = remember { androidx.compose.runtime.mutableStateMapOf<String, Boolean>() }
 
-    val problems = listOf(
-        ProblemItem("1", "Two Sum", "EASY", "Array, Hash Table", true),
-        ProblemItem("20", "Valid Parentheses", "EASY", "Stack, String", true),
-        ProblemItem("200", "Number of Islands", "MEDIUM", "BFS, DFS, Graph", false),
-        ProblemItem("146", "LRU Cache", "MEDIUM", "Hash Table, Linked List", true),
-        ProblemItem("42", "Trapping Rain Water", "HARD", "Two Pointers, Stack", false)
-    )
+    val initialProblems = remember {
+        listOf(
+            ProblemItem("1", "Two Sum", "EASY", "Array, Hash Table", false),
+            ProblemItem("20", "Valid Parentheses", "EASY", "Stack, String", false),
+            ProblemItem("200", "Number of Islands", "MEDIUM", "BFS, DFS, Graph", false),
+            ProblemItem("146", "LRU Cache", "MEDIUM", "Hash Table, Linked List", false),
+            ProblemItem("42", "Trapping Rain Water", "HARD", "Two Pointers, Stack", false)
+        )
+    }
+
+    val problems = initialProblems.map { item ->
+        item.copy(isSolved = solvedStateMap[item.id] ?: false)
+    }
+
+    val totalSolved = problems.count { it.isSolved }
+    val easySolved = problems.count { it.isSolved && it.difficulty == "EASY" }
+    val medSolved = problems.count { it.isSolved && it.difficulty == "MEDIUM" }
+    val hardSolved = problems.count { it.isSolved && it.difficulty == "HARD" }
 
     val filtered = when (selectedDifficultyFilter) {
         "EASY" -> problems.filter { it.difficulty == "EASY" }
@@ -717,7 +728,7 @@ fun LeetCodeSection(onOpenUrl: () -> Unit, viewModel: StudyViewModel) {
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text("LeetCode Arena", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryText)
-                            Text("128 Solved • Easy 60 | Med 52 | Hard 16", style = MaterialTheme.typography.bodyMedium, color = MutedText, fontSize = 11.sp)
+                            Text("$totalSolved Solved • Easy $easySolved | Med $medSolved | Hard $hardSolved", style = MaterialTheme.typography.bodyMedium, color = MutedText, fontSize = 11.sp)
                         }
                     }
 
@@ -744,7 +755,14 @@ fun LeetCodeSection(onOpenUrl: () -> Unit, viewModel: StudyViewModel) {
             borderColor = GlassBorder
         ) {
             Column(modifier = Modifier.padding(18.dp)) {
-                Text("Daily Problem Tracker", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryText)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Daily Problem Tracker", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryText)
+                    Text("Tap to mark solved", style = MaterialTheme.typography.labelSmall, color = MutedText, fontSize = 10.sp)
+                }
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -775,7 +793,11 @@ fun LeetCodeSection(onOpenUrl: () -> Unit, viewModel: StudyViewModel) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 6.dp),
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable {
+                                solvedStateMap[prob.id] = !(solvedStateMap[prob.id] ?: false)
+                            }
+                            .padding(vertical = 8.dp, horizontal = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -877,7 +899,7 @@ fun UnstopSection(onOpenUrl: () -> Unit) {
         Text("Live Hackathons & Opportunities", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryText)
 
         val unstopList = listOf(
-            UnstopEvent("Flipkart GRID 6.0 Software Challenge", "Hackathon • $10,000 Prize Pool", "Ends in 4 Days", "REGISTERED"),
+            UnstopEvent("Flipkart GRID 6.0 Software Challenge", "Hackathon • $10,000 Prize Pool", "Ends in 4 Days", "APPLY"),
             UnstopEvent("Google Summer of Code 2026 Prep", "Open Source Mentorship", "Opens Next Month", "APPLY"),
             UnstopEvent("Amazon ML Summer School", "Machine Learning & AI Workshop", "3 Days Left", "APPLY"),
             UnstopEvent("Tata Crucible Campus Quiz 2026", "National Tech & Business Quiz", "Live Now", "APPLY")
@@ -1068,6 +1090,17 @@ fun CertificatesSection(onOpenUrl: (String) -> Unit) {
         CertProvider("NPTEL", "https://nptel.ac.in", "IIT Certified Core Engineering Courses", Color(0xFF8B0000), "🎓")
     )
 
+    val userCertList = remember { androidx.compose.runtime.mutableStateListOf<CertItem>() }
+    var showAddCertDialog by remember { mutableStateOf(false) }
+
+    var newCertTitle by remember { mutableStateOf("") }
+    var newCertProvider by remember { mutableStateOf("") }
+    var newCertUrl by remember { mutableStateOf("") }
+    var newCertIsCompleted by remember { mutableStateOf(true) }
+
+    val completed = userCertList.filter { it.isCompleted }
+    val inProgress = userCertList.filter { !it.isCompleted }
+
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         GlassCard(
             modifier = Modifier.fillMaxWidth(),
@@ -1076,12 +1109,27 @@ fun CertificatesSection(onOpenUrl: (String) -> Unit) {
             borderColor = StatusSuccess.copy(alpha = 0.4f)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("📜", fontSize = 32.sp)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column {
-                        Text("Certifications Tracker & Hub", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryText)
-                        Text("Track, verify and claim free industry certifications", style = MaterialTheme.typography.bodyMedium, color = MutedText, fontSize = 11.sp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("📜", fontSize = 32.sp)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text("Certifications Tracker & Hub", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryText)
+                            Text("Track, verify and claim free industry certifications", style = MaterialTheme.typography.bodyMedium, color = MutedText, fontSize = 11.sp)
+                        }
+                    }
+
+                    Button(
+                        onClick = { showAddCertDialog = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
+                        shape = RoundedCornerShape(12.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text("+ Add Cert", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PrimaryText)
                     }
                 }
 
@@ -1091,9 +1139,9 @@ fun CertificatesSection(onOpenUrl: (String) -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    CertStatPill("Completed", "3 Certs", StatusSuccess)
-                    CertStatPill("In Progress", "2 Active", ElectricBlue)
-                    CertStatPill("Next Recommended", "AWS Cloud", CyberPurple)
+                    CertStatPill("Completed", "${completed.size} Certs", StatusSuccess)
+                    CertStatPill("In Progress", "${inProgress.size} Active", ElectricBlue)
+                    CertStatPill("Next Recommended", "Azure AI", CyberPurple)
                 }
             }
         }
@@ -1101,40 +1149,56 @@ fun CertificatesSection(onOpenUrl: (String) -> Unit) {
         // 1. Completed Certificates
         Text("Completed Certificates (Verified)", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryText)
 
-        val completed = listOf(
-            CertItem("Google Cloud Digital Leader", "Google Cloud Skills Boost", "Earned: June 2026", "https://www.cloudskillsboost.google", true, 100),
-            CertItem("Responsive Web Design", "freeCodeCamp", "Earned: May 2026", "https://www.freecodecamp.org", true, 100),
-            CertItem("Java Programming Fundamentals", "NPTEL / IIT Madras", "Earned: April 2026", "https://nptel.ac.in", true, 100)
-        )
-
-        completed.forEach { item ->
+        if (completed.isEmpty()) {
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 cornerRadius = 20.dp,
                 backgroundColor = CardDark,
-                borderColor = StatusSuccess.copy(alpha = 0.3f)
+                borderColor = GlassBorder
             ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = StatusSuccess, modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(item.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryText, fontSize = 13.sp)
-                            Text("${item.provider} • ${item.date}", style = MaterialTheme.typography.bodyMedium, color = SecondaryText, fontSize = 11.sp)
-                        }
-                    }
-
-                    OutlinedButton(
-                        onClick = { onOpenUrl(item.url) },
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.height(32.dp),
-                        contentPadding = PaddingValues(horizontal = 10.dp)
+                    Text("🎓", fontSize = 36.sp)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("No Completed Certificates Yet", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = PrimaryText)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Earn certifications on NPTEL, freeCodeCamp, or Google Cloud and add them to your fresh profile!", style = MaterialTheme.typography.bodySmall, color = SecondaryText, fontSize = 11.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                }
+            }
+        } else {
+            completed.forEach { item ->
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    cornerRadius = 20.dp,
+                    backgroundColor = CardDark,
+                    borderColor = StatusSuccess.copy(alpha = 0.3f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("View Badge", fontSize = 10.sp, color = ElectricBlue, fontWeight = FontWeight.Bold)
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = StatusSuccess, modifier = Modifier.size(24.dp))
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(item.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryText, fontSize = 13.sp)
+                                Text("${item.provider} • ${item.date}", style = MaterialTheme.typography.bodyMedium, color = SecondaryText, fontSize = 11.sp)
+                            }
+                        }
+
+                        OutlinedButton(
+                            onClick = { onOpenUrl(item.url.ifBlank { "https://google.com" }) },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.height(32.dp),
+                            contentPadding = PaddingValues(horizontal = 10.dp)
+                        ) {
+                            Text("View Badge", fontSize = 10.sp, color = ElectricBlue, fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
@@ -1143,57 +1207,149 @@ fun CertificatesSection(onOpenUrl: (String) -> Unit) {
         // 2. In Progress Certificates
         Text("Certificates In Progress", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryText)
 
-        val inProgress = listOf(
-            CertItem("AWS Cloud Practitioner Prep", "AWS Educate", "75% Completed (3 Modules Left)", "https://aws.amazon.com/education/aws-educate", false, 75),
-            CertItem("Cybersecurity Essentials", "Cisco Skills for All", "40% Completed (5 Modules Left)", "https://skillsforall.com", false, 40)
-        )
-
-        inProgress.forEach { item ->
+        if (inProgress.isEmpty()) {
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 cornerRadius = 20.dp,
                 backgroundColor = CardDark,
                 borderColor = GlassBorder
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(item.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryText, fontSize = 13.sp)
-                            Text(item.provider, style = MaterialTheme.typography.bodyMedium, color = SecondaryText, fontSize = 11.sp)
-                        }
-                        Text("${item.progress}%", style = MaterialTheme.typography.labelLarge, color = ElectricBlue, fontWeight = FontWeight.Bold)
-                    }
-
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text("⏳", fontSize = 36.sp)
                     Spacer(modifier = Modifier.height(8.dp))
+                    Text("No Active Certificates In Progress", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = PrimaryText)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Explore free providers below to enroll in your next certification!", style = MaterialTheme.typography.bodySmall, color = SecondaryText, fontSize = 11.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                }
+            }
+        } else {
+            inProgress.forEach { item ->
+                GlassCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    cornerRadius = 20.dp,
+                    backgroundColor = CardDark,
+                    borderColor = GlassBorder
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(item.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryText, fontSize = 13.sp)
+                                Text(item.provider, style = MaterialTheme.typography.bodyMedium, color = SecondaryText, fontSize = 11.sp)
+                            }
+                            Text("${item.progress}%", style = MaterialTheme.typography.labelLarge, color = ElectricBlue, fontWeight = FontWeight.Bold)
+                        }
 
-                    androidx.compose.material3.LinearProgressIndicator(
-                        progress = { item.progress / 100f },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp)),
-                        color = ElectricBlue,
-                        trackColor = SurfaceDark
-                    )
+                        Spacer(modifier = Modifier.height(8.dp))
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                        androidx.compose.material3.LinearProgressIndicator(
+                            progress = { item.progress / 100f },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = ElectricBlue,
+                            trackColor = SurfaceDark
+                        )
 
-                    Button(
-                        onClick = { onOpenUrl(item.url) },
-                        colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(34.dp)
-                    ) {
-                        Text("Continue Module", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PrimaryText)
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Button(
+                            onClick = { onOpenUrl(item.url.ifBlank { "https://google.com" }) },
+                            colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(34.dp)
+                        ) {
+                            Text("Continue Module", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = PrimaryText)
+                        }
                     }
                 }
             }
+        }
+
+        if (showAddCertDialog) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showAddCertDialog = false },
+                title = { Text("Add Certificate", color = PrimaryText, fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        androidx.compose.material3.OutlinedTextField(
+                            value = newCertTitle,
+                            onValueChange = { newCertTitle = it },
+                            label = { Text("Certificate Title") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        androidx.compose.material3.OutlinedTextField(
+                            value = newCertProvider,
+                            onValueChange = { newCertProvider = it },
+                            label = { Text("Provider (e.g. Google, NPTEL)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        androidx.compose.material3.OutlinedTextField(
+                            value = newCertUrl,
+                            onValueChange = { newCertUrl = it },
+                            label = { Text("Certificate Link / URL") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            androidx.compose.material3.Checkbox(
+                                checked = newCertIsCompleted,
+                                onCheckedChange = { newCertIsCompleted = it }
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(if (newCertIsCompleted) "Completed" else "In Progress", color = PrimaryText, fontSize = 12.sp)
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (newCertTitle.isNotBlank()) {
+                                userCertList.add(
+                                    CertItem(
+                                        title = newCertTitle.trim(),
+                                        provider = newCertProvider.trim().ifBlank { "Self-Paced" },
+                                        date = if (newCertIsCompleted) "Earned Recently" else "In Progress",
+                                        url = newCertUrl.trim(),
+                                        isCompleted = newCertIsCompleted,
+                                        progress = if (newCertIsCompleted) 100 else 50
+                                    )
+                                )
+                                newCertTitle = ""
+                                newCertProvider = ""
+                                newCertUrl = ""
+                                showAddCertDialog = false
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = ElectricBlue)
+                    ) {
+                        Text("Add", color = PrimaryText, fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    OutlinedButton(onClick = { showAddCertDialog = false }) {
+                        Text("Cancel", color = SecondaryText)
+                    }
+                },
+                containerColor = SurfaceDark,
+                shape = RoundedCornerShape(20.dp)
+            )
         }
 
         // 3. Recommended Next Certificate
@@ -1328,9 +1484,9 @@ fun AiCareerAssistantCard(viewModel: StudyViewModel, onOpenAiScreen: () -> Unit)
             Spacer(modifier = Modifier.height(14.dp))
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                CareerRoadmapPill("Profile Completion", "88%", StatusSuccess)
-                CareerRoadmapPill("Daily Recommended Platform", "LeetCode (Medium Dynamic Programming)", ElectricBlue)
-                CareerRoadmapPill("Weekly Goal", "Solve 5 LeetCode & Update GitHub Readme", CyberPurple)
+                CareerRoadmapPill("Profile Completion", "0%", StatusWarning)
+                CareerRoadmapPill("Daily Recommended Platform", "LeetCode (Solve Array / String Easy)", ElectricBlue)
+                CareerRoadmapPill("Weekly Goal", "Set up GitHub & LinkedIn Profiles", CyberPurple)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -1422,10 +1578,9 @@ fun CareerNotificationsSection() {
         Text("Career Alerts & Notifications", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = PrimaryText)
 
         val alerts = listOf(
-            NotificationItem("Daily Coding Reminder", "Don't forget today's LeetCode Daily Challenge to keep your 14-day streak!", "Today, 8:00 AM", FlameOrange, Icons.Default.Code),
-            NotificationItem("New Hackathon Alert", "Flipkart GRID 6.0 registrations ending soon on Unstop.", "Today, 10:30 AM", ElectricBlue, Icons.Default.Event),
-            NotificationItem("Internship Alert", "Amazon ML Summer School applications are now open.", "Yesterday", StatusSuccess, Icons.Default.Work),
-            NotificationItem("Contest Reminder", "Codeforces Div 2 Round starts tomorrow at 8:05 PM.", "Yesterday", CyberPurple, Icons.Default.Notifications)
+            NotificationItem("Welcome to Career Hub!", "Your fresh professional portfolio is ready. Connect GitHub, LinkedIn, and LeetCode to track placement progress.", "Just now", ElectricBlue, Icons.Default.Work),
+            NotificationItem("Start Your Coding Streak", "Solve your first problem today on LeetCode or GitHub to initiate your streak counter!", "Just now", FlameOrange, Icons.Default.Code),
+            NotificationItem("Placement Readiness", "Complete your profile details to unlock personalized AI Placement Guidance.", "Just now", CyberPurple, Icons.Default.AutoAwesome)
         )
 
         alerts.forEach { alert ->
