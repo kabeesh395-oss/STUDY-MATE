@@ -130,7 +130,7 @@ class MainActivity : ComponentActivity() {
                                 "SPLASH" -> SplashScreen(onSplashComplete = { viewModel.navigateTo("HOME") })
                                 "HOME" -> HomeScreen(viewModel = viewModel)
                                 "QUESTION_BANK" -> QuestionPaperBankScreen(viewModel = viewModel)
-                                "CAREER_HUB" -> CareerHubScreen(viewModel = viewModel)
+                                "CAREER_HUB" -> CareerHubScreen(viewModel = viewModel, authViewModel = authViewModel)
                                 "SUBJECT_DETAIL" -> SubjectDetailScreen(viewModel = viewModel)
                                 "UPLOAD" -> UploadNotesScreen(viewModel = viewModel)
                                 "AI_CHAT" -> AiChatScreen(viewModel = viewModel)

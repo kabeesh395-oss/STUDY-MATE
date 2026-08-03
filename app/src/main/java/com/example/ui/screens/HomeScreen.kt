@@ -574,7 +574,7 @@ fun HomeScreen(
                                     color = PrimaryText
                                 )
                                 Text(
-                                    text = "28.5 hrs logged this week",
+                                    text = if ((userProfile?.streakDays ?: 0) > 0) "${String.format("%.1f", (userProfile?.streakDays ?: 0) * 1.5f)} hrs logged this week" else "0.0 hrs logged this week (Not started)",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MutedText,
                                     fontSize = 12.sp

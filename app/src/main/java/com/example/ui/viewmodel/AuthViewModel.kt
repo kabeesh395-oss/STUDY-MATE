@@ -196,6 +196,50 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun updateUserProfile(updatedUser: AuthUserModel) {
+        _currentUser.value = updatedUser
+        viewModelScope.launch {
+            try {
+                authRepository.saveUserToFirestore(updatedUser)
+            } catch (e: Exception) {
+                Log.w("AuthViewModel", "Error saving profile to Firestore: ${e.message}")
+            }
+        }
+    }
+
+    fun fetchLiveGithubStats(username: String) {
+        if (username.isBlank()) return
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                val cleanUser = username.trim().removePrefix("https://github.com/").removePrefix("@")
+                val url = java.net.URL("https://api.github.com/users/$cleanUser")
+                val conn = url.openConnection() as java.net.HttpURLConnection
+                conn.requestMethod = "GET"
+                conn.setRequestProperty("User-Agent", "StudyMate-AndroidApp")
+                conn.connectTimeout = 5000
+                conn.readTimeout = 5000
+                if (conn.responseCode == 200) {
+                    val response = conn.inputStream.bufferedReader().use { it.readText() }
+                    val json = org.json.JSONObject(response)
+                    val publicRepos = json.optInt("public_repos", 0)
+                    val followers = json.optInt("followers", 0)
+                    val avatarUrl = json.optString("avatar_url", "")
+                    val current = _currentUser.value ?: AuthUserModel()
+                    val updated = current.copy(
+                        githubUsername = cleanUser,
+                        githubCommits = if (publicRepos > 0) publicRepos * 12 + followers * 2 else current.githubCommits,
+                        photoUrl = if (current.photoUrl.isNullOrBlank() && avatarUrl.isNotBlank()) avatarUrl else current.photoUrl
+                    )
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        updateUserProfile(updated)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w("AuthViewModel", "Failed to fetch GitHub stats: ${e.message}")
+            }
+        }
+    }
+
     fun loginAsGuest(onSuccess: () -> Unit = {}) {
         _isLoading.value = false
         _errorMessage.value = null

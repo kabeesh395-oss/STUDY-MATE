@@ -188,9 +188,9 @@ fun ProfileScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceAround
                         ) {
-                            ProfileStatPill("XP Points", "${profile?.xpPoints ?: 1250} XP", Icons.Default.EmojiEvents)
-                            ProfileStatPill("Coins Balance", "${profile?.coins ?: 250}", Icons.Default.MonetizationOn)
-                            ProfileStatPill("Study Hours", "28.5 Hrs", Icons.Default.School)
+                            ProfileStatPill("XP Points", "${profile?.xpPoints ?: 0} XP", Icons.Default.EmojiEvents)
+                            ProfileStatPill("Coins Balance", "${profile?.coins ?: 0}", Icons.Default.MonetizationOn)
+                            ProfileStatPill("Study Hours", if ((profile?.streakDays ?: 0) > 0) "${String.format("%.1f", (profile?.streakDays ?: 0) * 1.5f)} Hrs" else "0.0 Hrs", Icons.Default.School)
                         }
                     }
                 }

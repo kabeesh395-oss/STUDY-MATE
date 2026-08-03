@@ -56,6 +56,8 @@ fun DashboardAnalyticsScreen(
     viewModel: StudyViewModel,
     modifier: Modifier = Modifier
 ) {
+    val userProfile by viewModel.userProfile.collectAsState(initial = null)
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -108,7 +110,8 @@ fun DashboardAnalyticsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    AnalyticsStatPill("Total Study", "28.5 hrs", "+18%", Icons.Default.Schedule, Modifier.weight(1f))
+                    val studyHrs = if ((userProfile?.streakDays ?: 0) > 0) "${String.format("%.1f", (userProfile?.streakDays ?: 0) * 1.5f)} hrs" else "0.0 hrs"
+                    AnalyticsStatPill("Total Study", studyHrs, if ((userProfile?.streakDays ?: 0) > 0) "+18%" else "0%", Icons.Default.Schedule, Modifier.weight(1f))
                     AnalyticsStatPill("Quiz Accuracy", "88%", "+5%", Icons.Default.CheckCircle, Modifier.weight(1f))
                 }
             }

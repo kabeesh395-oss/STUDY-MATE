@@ -156,12 +156,32 @@ class FirebaseAuthRepository {
                 "semester" to userModel.semester,
                 "createdAt" to userModel.createdAt,
                 "isGoogleUser" to userModel.isGoogleUser,
-                "lastLoginAt" to System.currentTimeMillis()
+                "lastLoginAt" to System.currentTimeMillis(),
+
+                // Career & Professional Hub Profiles
+                "linkedinUrl" to userModel.linkedinUrl,
+                "githubUsername" to userModel.githubUsername,
+                "leetcodeUsername" to userModel.leetcodeUsername,
+                "unstopUrl" to userModel.unstopUrl,
+                "hackerrankUsername" to userModel.hackerrankUsername,
+                "codechefUsername" to userModel.codechefUsername,
+                "codeforcesUsername" to userModel.codeforcesUsername,
+                "kaggleUsername" to userModel.kaggleUsername,
+                "portfolioUrl" to userModel.portfolioUrl,
+                "resumeUrl" to userModel.resumeUrl,
+
+                // Real Statistics
+                "githubCommits" to userModel.githubCommits,
+                "leetcodeSolved" to userModel.leetcodeSolved,
+                "codingStreakDays" to userModel.codingStreakDays,
+                "weeklyLearningHours" to userModel.weeklyLearningHours.toDouble(),
+                "linkedinScore" to userModel.linkedinScore,
+                "unstopAppsCount" to userModel.unstopAppsCount
             )
 
             firestoreInstance.collection("users")
                 .document(userModel.uid)
-                .set(userMap)
+                .set(userMap, com.google.firebase.firestore.SetOptions.merge())
                 .await()
 
             Result.success(Unit)
@@ -187,7 +207,25 @@ class FirebaseAuthRepository {
                     department = snapshot.getString("department") ?: "Computer Science & Engineering",
                     semester = snapshot.getString("semester") ?: "Semester 6",
                     createdAt = snapshot.getLong("createdAt") ?: System.currentTimeMillis(),
-                    isGoogleUser = snapshot.getBoolean("isGoogleUser") ?: false
+                    isGoogleUser = snapshot.getBoolean("isGoogleUser") ?: false,
+
+                    linkedinUrl = snapshot.getString("linkedinUrl") ?: "",
+                    githubUsername = snapshot.getString("githubUsername") ?: "",
+                    leetcodeUsername = snapshot.getString("leetcodeUsername") ?: "",
+                    unstopUrl = snapshot.getString("unstopUrl") ?: "",
+                    hackerrankUsername = snapshot.getString("hackerrankUsername") ?: "",
+                    codechefUsername = snapshot.getString("codechefUsername") ?: "",
+                    codeforcesUsername = snapshot.getString("codeforcesUsername") ?: "",
+                    kaggleUsername = snapshot.getString("kaggleUsername") ?: "",
+                    portfolioUrl = snapshot.getString("portfolioUrl") ?: "",
+                    resumeUrl = snapshot.getString("resumeUrl") ?: "",
+
+                    githubCommits = (snapshot.getLong("githubCommits") ?: 0L).toInt(),
+                    leetcodeSolved = (snapshot.getLong("leetcodeSolved") ?: 0L).toInt(),
+                    codingStreakDays = (snapshot.getLong("codingStreakDays") ?: 0L).toInt(),
+                    weeklyLearningHours = (snapshot.getDouble("weeklyLearningHours") ?: 0.0).toFloat(),
+                    linkedinScore = (snapshot.getLong("linkedinScore") ?: 0L).toInt(),
+                    unstopAppsCount = (snapshot.getLong("unstopAppsCount") ?: 0L).toInt()
                 )
             } else {
                 null
