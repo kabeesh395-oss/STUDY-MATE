@@ -963,7 +963,7 @@ fun LinkedInSection(
                     onClick = {
                         isAnalyzing = true
                         viewModel.sendChatMessage(
-                            userPrompt = "Review my student LinkedIn profile (${user?.linkedinUrl.ifBlank { "CS Engineering Student" }}). Give me 3 high-impact headline suggestions and 3 tips for my profile summary as a Computer Science student.",
+                            userPrompt = "Review my student LinkedIn profile (${user?.linkedinUrl.orEmpty().ifBlank { "CS Engineering Student" }}). Give me 3 high-impact headline suggestions and 3 tips for my profile summary as a Computer Science student.",
                             modeOverride = "TEACHER"
                         )
                         aiFeedbackText = "AI Review Generated! Check 'AI Tutor' tab for detailed personalized headline and summary recommendations."
