@@ -7,6 +7,9 @@ on:
     branches: [ "main", "master" ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,26 +24,46 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v4
-
+    # Bootstrap the wrapper before setup-gradle: setup-gradle validates the
+    # wrapper and fails when gradle-wrapper.jar is absent or corrupt.
     - name: Validate & prepare Gradle Wrapper & Environment
+      shell: bash
       run: |
+        set -euo pipefail
         sed -i 's/\r$//' gradlew
         chmod +x gradlew
+
         if [ ! -f .env ] && [ -f .env.example ]; then
           cp .env.example .env
         fi
-        mkdir -p gradle/wrapper
-        if [ ! -f gradle/wrapper/gradle-wrapper.jar ] || ! unzip -t gradle/wrapper/gradle-wrapper.jar >/dev/null 2>&1; then
-          echo "gradle-wrapper.jar is missing or corrupted. Repairing wrapper..."
-          rm -f gradle/wrapper/gradle-wrapper.jar
-          GRADLE_VERSION=$(grep 'distributionUrl' gradle/wrapper/gradle-wrapper.properties | sed -n 's/.*gradle-\([0-9.]*\)-.*/\1/p')
-          if [ -z "$GRADLE_VERSION" ]; then GRADLE_VERSION="9.3.1"; fi
-          echo "Downloading gradle-wrapper.jar for Gradle $GRADLE_VERSION..."
-          curl -sSL -f "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
+
+        WRAPPER_DIR="gradle/wrapper"
+        WRAPPER_JAR="$WRAPPER_DIR/gradle-wrapper.jar"
+        WRAPPER_PROPERTIES="$WRAPPER_DIR/gradle-wrapper.properties"
+
+        if [ ! -f "$WRAPPER_PROPERTIES" ]; then
+          echo "::error::Missing $WRAPPER_PROPERTIES"
+          exit 1
         fi
+
+        if [ ! -f "$WRAPPER_JAR" ] || ! unzip -t "$WRAPPER_JAR" >/dev/null 2>&1; then
+          echo "Gradle wrapper JAR is missing or invalid; downloading the official wrapper JAR."
+          GRADLE_VERSION="$(sed -n 's/.*gradle-\([0-9][0-9.]*\)-.*/\1/p' "$WRAPPER_PROPERTIES" | head -n 1)"
+          if [ -z "$GRADLE_VERSION" ]; then
+            echo "::error::Could not determine Gradle version from $WRAPPER_PROPERTIES"
+            exit 1
+          fi
+          mkdir -p "$WRAPPER_DIR"
+          curl --fail --location --silent --show-error \
+            "https://raw.githubusercontent.com/gradle/gradle/v${GRADLE_VERSION}/gradle/wrapper/gradle-wrapper.jar" \
+            --output "$WRAPPER_JAR"
+          unzip -t "$WRAPPER_JAR" >/dev/null
+        fi
+
         ./gradlew --version
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
 
     - name: Build Debug APK with Gradle
       run: ./gradlew assembleDebug --stacktrace
@@ -50,4 +73,3 @@ jobs:
       with:
         name: app-debug
         path: app/build/outputs/apk/debug/*.apk
-
